@@ -1,0 +1,35 @@
+[package]
+name = "agent-llm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+description = "LLM provider abstraction layer for agent-rs"
+repository = "https://github.com/yourusername/agent-rs"
+keywords = ["agent", "llm", "ai"]
+categories = ["api-bindings"]
+
+[features]
+default = []
+anthropic = ["reqwest"]
+openai = ["reqwest"]
+ollama = ["reqwest"]
+
+[dependencies]
+# From workspace
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+agent-core = { workspace = true }
+agent-utils = { workspace = true }
+
+# Optional dependencies for providers
+reqwest = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+mockall = { workspace = true }

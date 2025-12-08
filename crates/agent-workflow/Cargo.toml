@@ -1,0 +1,28 @@
+[package]
+name = "agent-workflow"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+description = "Multi-agent orchestration and workflow execution for agent-rs"
+repository = "https://github.com/yourusername/agent-rs"
+keywords = ["agent", "workflow", "orchestration"]
+categories = ["asynchronous"]
+
+[dependencies]
+# From workspace
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+agent-core = { workspace = true }
+agent-llm = { workspace = true }
+agent-tools = { workspace = true }
+agent-utils = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+mockall = { workspace = true }

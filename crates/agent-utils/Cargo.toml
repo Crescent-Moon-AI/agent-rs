@@ -1,0 +1,23 @@
+[package]
+name = "agent-utils"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+description = "Shared utilities for agent-rs"
+repository = "https://github.com/yourusername/agent-rs"
+keywords = ["agent", "utilities"]
+categories = ["development-tools"]
+
+[dependencies]
+# From workspace
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }

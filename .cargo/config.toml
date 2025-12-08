@@ -1,0 +1,10 @@
+[alias]
+xtask = "run --package xtask --"
+
+[build]
+# Use all CPU cores for parallel compilation
+jobs = -1
+
+[term]
+# Color output
+color = "auto"

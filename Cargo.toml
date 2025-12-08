@@ -1,0 +1,72 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/agent-core",
+    "crates/agent-llm",
+    "crates/agent-tools",
+    "crates/agent-workflow",
+    "crates/agent-utils",
+    "crates/agent-cli",
+    "crates/xtask",
+]
+
+# Workspace-level dependency management
+# This ensures all crates use the same versions
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.48", features = ["full"] }
+async-trait = "0.1.89"
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# HTTP client
+reqwest = { version = "0.12.24", features = ["json", "stream"] }
+
+# Logging and tracing
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# CLI
+clap = { version = "4.5.51", features = ["derive"] }
+
+# Testing
+mockall = "0.14"
+tokio-test = "0.4"
+
+# Proc macros
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+
+# Internal workspace crates
+agent-core = { path = "crates/agent-core", version = "0.0.0" }
+agent-llm = { path = "crates/agent-llm", version = "0.0.0" }
+agent-tools = { path = "crates/agent-tools", version = "0.0.0" }
+agent-workflow = { path = "crates/agent-workflow", version = "0.0.0" }
+agent-utils = { path = "crates/agent-utils", version = "0.0.0" }
+
+[workspace.package]
+# Shared package metadata for all crates
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+
+[profile.dev]
+# Fast compile times for development
+opt-level = 0
+
+[profile.release]
+# Optimize for performance
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+[profile.test]
+# Faster test compilation
+opt-level = 1

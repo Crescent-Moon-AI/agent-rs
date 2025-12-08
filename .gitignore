@@ -1,0 +1,41 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code
+.claude/cache/
+.claude/tmp/
+.claude/settings.local.json
+
+# Environment
+.env
+.env.local
+*.env
+
+# Documentation build artifacts
+/docs/target/
+/docs/book/
+
+# Test coverage
+/target/coverage/
+tarpaulin-report.html
+cobertura.xml
+
+# Profiling
+*.profdata
+*.profraw
+
+# OS
+Thumbs.db
