@@ -4,8 +4,10 @@ members = [
     "crates/agent-core",
     "crates/agent-llm",
     "crates/agent-tools",
+    "crates/agent-runtime",
     "crates/agent-workflow",
     "crates/agent-utils",
+    "crates/agent-mcp",
     "crates/agent-cli",
     "crates/xtask",
 ]
@@ -35,6 +37,16 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # CLI
 clap = { version = "4.5.51", features = ["derive"] }
 
+# MCP SDK
+rust-mcp-sdk = "0.2"
+rust-mcp-schema = "0.2"
+
+# Utilities
+url = "2.5"
+futures = "0.3"
+regex = "1.11"
+comfy-table = "7.1"
+
 # Testing
 mockall = "0.14"
 tokio-test = "0.4"
@@ -48,8 +60,10 @@ proc-macro2 = "1.0"
 agent-core = { path = "crates/agent-core", version = "0.0.0" }
 agent-llm = { path = "crates/agent-llm", version = "0.0.0" }
 agent-tools = { path = "crates/agent-tools", version = "0.0.0" }
+agent-runtime = { path = "crates/agent-runtime", version = "0.0.0" }
 agent-workflow = { path = "crates/agent-workflow", version = "0.0.0" }
 agent-utils = { path = "crates/agent-utils", version = "0.0.0" }
+agent-mcp = { path = "crates/agent-mcp", version = "0.0.0" }
 
 [workspace.package]
 # Shared package metadata for all crates

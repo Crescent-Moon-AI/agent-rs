@@ -1,13 +1,11 @@
 //! Multi-agent orchestration and workflow execution for agent-rs
 //!
 //! This crate provides capabilities for coordinating multiple agents and
-//! executing complex workflows, including:
-//!
-//! - AgentExecutor: Core agent loop (LLM → tools → repeat)
-//! - Workflow: Sequential multi-agent execution
+//! executing complex workflows.
 
-pub mod executor;
 pub mod workflow;
+pub mod workflow_agent;
 
-pub use executor::{AgentExecutor, AgentExecutorBuilder, ExecutorConfig};
-pub use workflow::Workflow;
+// Re-export for convenience
+pub use workflow::{Workflow, WorkflowBuilder, WorkflowStep};
+pub use workflow_agent::WorkflowAgent;

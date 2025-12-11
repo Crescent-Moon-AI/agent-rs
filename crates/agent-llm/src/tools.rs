@@ -1,7 +1,7 @@
 //! Tool definition types for LLM tool use
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 /// Tool definition for LLM provider
 ///
@@ -123,6 +123,7 @@ pub mod schema {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_tool_definition_creation() {

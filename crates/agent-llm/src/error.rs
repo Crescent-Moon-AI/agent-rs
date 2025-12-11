@@ -34,6 +34,7 @@ pub enum LLMError {
 
     /// HTTP error
     #[error("HTTP error: {0}")]
+    #[cfg(any(feature = "anthropic", feature = "openai", feature = "ollama"))]
     HttpError(#[from] reqwest::Error),
 
     /// Unexpected response format

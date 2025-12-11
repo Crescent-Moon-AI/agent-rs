@@ -1,0 +1,50 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "mcp-server-filesystem",
+      "args": ["--root", "/path/to/allowed/directory"],
+      "env": {
+        "LOG_LEVEL": "info"
+      }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.github.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      },
+      "timeout_secs": 30
+    },
+    "web-search": {
+      "type": "sse",
+      "url": "https://search-api.example.com/mcp",
+      "headers": {
+        "X-API-Key": "${SEARCH_API_KEY}"
+      },
+      "timeout_secs": 60
+    }
+  },
+  "agentConfigurations": {
+    "research-agent": {
+      "mcpServers": ["github", "web-search"],
+      "toolFilter": {
+        "allowedTools": ["search_*", "github_*"],
+        "deniedTools": ["github_delete_*"]
+      }
+    },
+    "file-agent": {
+      "mcpServers": ["filesystem"],
+      "toolFilter": {
+        "allowedTools": ["*"],
+        "deniedTools": ["delete_*", "remove_*"]
+      }
+    },
+    "general-agent": {
+      "mcpServers": ["filesystem", "github", "web-search"],
+      "toolFilter": {
+        "allowedTools": ["*"]
+      }
+    }
+  }
+}

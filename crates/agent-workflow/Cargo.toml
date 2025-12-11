@@ -19,8 +19,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 agent-core = { workspace = true }
-agent-llm = { workspace = true }
-agent-tools = { workspace = true }
+agent-runtime = { workspace = true }
 agent-utils = { workspace = true }
 
 [dev-dependencies]
