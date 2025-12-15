@@ -5,18 +5,13 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// Data provider for stock information
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum DataProvider {
     /// Yahoo Finance (default, no API key required)
+    #[default]
     Yahoo,
     /// Alpha Vantage (requires API key)
     AlphaVantage,
-}
-
-impl Default for DataProvider {
-    fn default() -> Self {
-        Self::Yahoo
-    }
 }
 
 /// Configuration for stock analysis operations
@@ -45,19 +40,35 @@ pub struct StockConfig {
 
     /// Alpha Vantage API key (optional)
     pub alpha_vantage_api_key: Option<String>,
+
+    /// Alpha Vantage API rate limit (requests per minute)
+    pub alpha_vantage_rate_limit: u32,
+
+    /// LLM model for analysis
+    pub model: String,
+
+    /// Temperature for LLM responses
+    pub temperature: f32,
+
+    /// Maximum tokens per response
+    pub max_tokens: usize,
 }
 
 impl Default for StockConfig {
     fn default() -> Self {
         Self {
             default_provider: DataProvider::Yahoo,
-            cache_ttl_realtime: Duration::from_secs(60),        // 1 minute
-            cache_ttl_fundamental: Duration::from_secs(3600),   // 1 hour
-            cache_ttl_news: Duration::from_secs(300),           // 5 minutes
+            cache_ttl_realtime: Duration::from_secs(60), // 1 minute
+            cache_ttl_fundamental: Duration::from_secs(3600), // 1 hour
+            cache_ttl_news: Duration::from_secs(300),    // 5 minutes
             max_retries: 3,
             retry_backoff_base: Duration::from_secs(1),
             request_timeout: Duration::from_secs(30),
             alpha_vantage_api_key: None,
+            alpha_vantage_rate_limit: 5, // Free tier: 5 requests/minute
+            model: "claude-opus-4-5-20251101".to_string(),
+            temperature: 0.5,
+            max_tokens: 4096,
         }
     }
 }
@@ -79,15 +90,16 @@ impl StockConfig {
     /// Validate the configuration
     pub fn validate(&self) -> Result<()> {
         if self.default_provider == DataProvider::AlphaVantage
-            && self.alpha_vantage_api_key.is_none() {
+            && self.alpha_vantage_api_key.is_none()
+        {
             return Err(StockError::ConfigError(
-                "Alpha Vantage API key required when using AlphaVantage provider".to_string()
+                "Alpha Vantage API key required when using AlphaVantage provider".to_string(),
             ));
         }
 
         if self.max_retries == 0 {
             return Err(StockError::ConfigError(
-                "max_retries must be greater than 0".to_string()
+                "max_retries must be greater than 0".to_string(),
             ));
         }
 
@@ -111,6 +123,10 @@ pub struct StockConfigBuilder {
     retry_backoff_base: Option<Duration>,
     request_timeout: Option<Duration>,
     alpha_vantage_api_key: Option<String>,
+    alpha_vantage_rate_limit: Option<u32>,
+    model: Option<String>,
+    temperature: Option<f32>,
+    max_tokens: Option<usize>,
 }
 
 impl StockConfigBuilder {
@@ -170,19 +186,73 @@ impl StockConfigBuilder {
         self
     }
 
+    /// Set Alpha Vantage rate limit (requests per minute)
+    pub fn alpha_vantage_rate_limit(mut self, limit: u32) -> Self {
+        self.alpha_vantage_rate_limit = Some(limit);
+        self
+    }
+
+    /// Set the LLM model
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.model = Some(model.into());
+        self
+    }
+
+    /// Set the temperature
+    pub fn temperature(mut self, temp: f32) -> Self {
+        self.temperature = Some(temp);
+        self
+    }
+
+    /// Set the maximum tokens
+    pub fn max_tokens(mut self, tokens: usize) -> Self {
+        self.max_tokens = Some(tokens);
+        self
+    }
+
+    /// Load model configuration from environment variables
+    pub fn from_env_model(mut self) -> Self {
+        if let Ok(model) = std::env::var("STOCK_MODEL") {
+            self.model = Some(model);
+        }
+        if let Ok(temp) = std::env::var("STOCK_TEMPERATURE") {
+            if let Ok(temp_val) = temp.parse() {
+                self.temperature = Some(temp_val);
+            }
+        }
+        if let Ok(tokens) = std::env::var("STOCK_MAX_TOKENS") {
+            if let Ok(token_val) = tokens.parse() {
+                self.max_tokens = Some(token_val);
+            }
+        }
+        self
+    }
+
     /// Build the configuration
     pub fn build(self) -> Result<StockConfig> {
         let defaults = StockConfig::default();
 
         let config = StockConfig {
             default_provider: self.default_provider.unwrap_or(defaults.default_provider),
-            cache_ttl_realtime: self.cache_ttl_realtime.unwrap_or(defaults.cache_ttl_realtime),
-            cache_ttl_fundamental: self.cache_ttl_fundamental.unwrap_or(defaults.cache_ttl_fundamental),
+            cache_ttl_realtime: self
+                .cache_ttl_realtime
+                .unwrap_or(defaults.cache_ttl_realtime),
+            cache_ttl_fundamental: self
+                .cache_ttl_fundamental
+                .unwrap_or(defaults.cache_ttl_fundamental),
             cache_ttl_news: self.cache_ttl_news.unwrap_or(defaults.cache_ttl_news),
             max_retries: self.max_retries.unwrap_or(defaults.max_retries),
-            retry_backoff_base: self.retry_backoff_base.unwrap_or(defaults.retry_backoff_base),
+            retry_backoff_base: self
+                .retry_backoff_base
+                .unwrap_or(defaults.retry_backoff_base),
             request_timeout: self.request_timeout.unwrap_or(defaults.request_timeout),
             alpha_vantage_api_key: self.alpha_vantage_api_key,
+            alpha_vantage_rate_limit: self
+                .alpha_vantage_rate_limit
+                .unwrap_or(defaults.alpha_vantage_rate_limit),
+            model: self.model.unwrap_or(defaults.model),
+            temperature: self.temperature.unwrap_or(defaults.temperature),
+            max_tokens: self.max_tokens.unwrap_or(defaults.max_tokens),
         };
 
         config.validate()?;

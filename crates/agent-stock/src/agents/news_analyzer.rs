@@ -47,19 +47,16 @@ impl NewsAnalyzerAgent {
         );
 
         // Create tools
-        let news_tool = Arc::new(NewsTool::new(
-            Arc::clone(&config),
-            cache_mgr.news.clone(),
-        ));
+        let news_tool = Arc::new(NewsTool::new(Arc::clone(&config), cache_mgr.news.clone()));
 
         // Register tools
         runtime.tools().register(news_tool);
 
         let executor_config = ExecutorConfig {
-            model: "claude-opus-4-5-20251101".to_string(),
+            model: config.model.clone(),
             system_prompt: Some(SYSTEM_PROMPT.to_string()),
-            max_tokens: 4096,
-            temperature: Some(0.5), // Slightly higher for nuanced analysis
+            max_tokens: config.max_tokens,
+            temperature: Some(config.temperature),
             max_iterations: 5,
         };
 

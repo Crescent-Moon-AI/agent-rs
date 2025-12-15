@@ -5,7 +5,7 @@ version.workspace = true
 
 [dependencies]
 agent-core.workspace = true
-agent-llm.workspace = true
+agent-llm = { workspace = true, features = ["anthropic"] }
 agent-tools.workspace = true
 agent-mcp.workspace = true
 tokio.workspace = true

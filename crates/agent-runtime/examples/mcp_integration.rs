@@ -5,12 +5,19 @@
 //! 2. Create an AgentRuntime with MCP support
 //! 3. Create tool agents that automatically discover MCP tools
 //!
-//! To run this example:
+//! ## Requirements
+//!
+//! - ANTHROPIC_API_KEY environment variable must be set
+//! - Optional: .mcp.json file for MCP server configuration
+//!
+//! ## To run this example:
 //! ```bash
+//! export ANTHROPIC_API_KEY=your_key_here
 //! cargo run --example mcp_integration
 //! ```
 
 use agent_core::Result;
+use agent_llm::providers::AnthropicProvider;
 use agent_runtime::{AgentRuntime, ExecutorConfig};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -40,9 +47,7 @@ async fn main() -> Result<()> {
                 .await?;
 
             println!("✓ Agent '{}' created successfully", agent.name());
-            println!(
-                "  (MCP tools have been automatically discovered and registered)\n"
-            );
+            println!("  (MCP tools have been automatically discovered and registered)\n");
 
             // Example 3: Using the agent would look like this:
             // let result = agent.execute("Search for Rust MCP documentation").await?;
@@ -68,27 +73,13 @@ async fn main() -> Result<()> {
 
 /// Create an AgentRuntime with MCP configuration loaded from file
 async fn create_runtime_with_mcp(config_path: PathBuf) -> Result<Arc<AgentRuntime>> {
-    use agent_llm::LLMProvider;
+    // Get Anthropic API key from environment
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .map_err(|_| agent_core::Error::ConfigError(
+            "ANTHROPIC_API_KEY environment variable not set. Set it with: export ANTHROPIC_API_KEY=your_key".to_string()
+        ))?;
 
-    // In a real application, you would create an actual LLM provider here
-    // For this example, we'll just demonstrate the structure
-    struct DemoProvider;
-
-    #[async_trait::async_trait]
-    impl LLMProvider for DemoProvider {
-        async fn complete(
-            &self,
-            _request: agent_llm::CompletionRequest,
-        ) -> agent_llm::Result<agent_llm::CompletionResponse> {
-            unimplemented!("This is a demo provider for example purposes only")
-        }
-
-        fn name(&self) -> &str {
-            "demo"
-        }
-    }
-
-    let provider = Arc::new(DemoProvider);
+    let provider = Arc::new(AnthropicProvider::new(api_key)?);
 
     // Build runtime with MCP configuration
     let runtime = AgentRuntime::builder()
@@ -101,25 +92,13 @@ async fn create_runtime_with_mcp(config_path: PathBuf) -> Result<Arc<AgentRuntim
 
 /// Create an AgentRuntime without MCP support
 async fn create_runtime_without_mcp() -> Result<Arc<AgentRuntime>> {
-    use agent_llm::LLMProvider;
+    // Get Anthropic API key from environment
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .map_err(|_| agent_core::Error::ConfigError(
+            "ANTHROPIC_API_KEY environment variable not set. Set it with: export ANTHROPIC_API_KEY=your_key".to_string()
+        ))?;
 
-    struct DemoProvider;
-
-    #[async_trait::async_trait]
-    impl LLMProvider for DemoProvider {
-        async fn complete(
-            &self,
-            _request: agent_llm::CompletionRequest,
-        ) -> agent_llm::Result<agent_llm::CompletionResponse> {
-            unimplemented!("This is a demo provider for example purposes only")
-        }
-
-        fn name(&self) -> &str {
-            "demo"
-        }
-    }
-
-    let provider = Arc::new(DemoProvider);
+    let provider = Arc::new(AnthropicProvider::new(api_key)?);
 
     let runtime = AgentRuntime::builder().provider(provider).build()?;
 

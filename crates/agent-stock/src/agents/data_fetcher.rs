@@ -56,10 +56,10 @@ impl DataFetcherAgent {
 
         // Create executor config
         let executor_config = ExecutorConfig {
-            model: "claude-opus-4-5-20251101".to_string(),
+            model: config.model.clone(),
             system_prompt: Some(SYSTEM_PROMPT.to_string()),
-            max_tokens: 4096,
-            temperature: Some(0.3), // Lower temperature for precise data fetching
+            max_tokens: config.max_tokens,
+            temperature: Some(config.temperature),
             max_iterations: 5,
         };
 

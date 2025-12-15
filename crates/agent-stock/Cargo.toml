@@ -7,7 +7,7 @@ rust-version.workspace = true
 [dependencies]
 # Internal crates
 agent-core = { workspace = true }
-agent-llm = { workspace = true }
+agent-llm = { workspace = true, features = ["anthropic"] }
 agent-runtime = { workspace = true }
 agent-tools = { workspace = true }
 agent-utils = { workspace = true }
@@ -37,6 +37,7 @@ chrono = { workspace = true }
 time = { workspace = true }
 cached = { workspace = true }
 yahoo_finance_api = { workspace = true }
+governor = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }

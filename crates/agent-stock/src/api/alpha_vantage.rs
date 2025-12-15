@@ -1,17 +1,25 @@
 //! Alpha Vantage API client
 
 use crate::error::{Result, StockError};
+use governor::clock::DefaultClock;
+use governor::state::{InMemoryState, NotKeyed};
+use governor::{Quota, RateLimiter};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::num::NonZeroU32;
+use std::sync::Arc;
 
 const BASE_URL: &str = "https://www.alphavantage.co/query";
+
+type SharedRateLimiter = Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>;
 
 /// Alpha Vantage API client
 #[derive(Debug, Clone)]
 pub struct AlphaVantageClient {
     client: Client,
     api_key: String,
+    rate_limiter: SharedRateLimiter,
 }
 
 /// Time series data point
@@ -47,46 +55,57 @@ pub struct CompanyOverview {
 }
 
 impl AlphaVantageClient {
-    /// Create a new Alpha Vantage client with API key
-    pub fn new(api_key: impl Into<String>) -> Self {
+    /// Create a new Alpha Vantage client with API key and rate limit
+    ///
+    /// # Arguments
+    /// * `api_key` - Alpha Vantage API key
+    /// * `rate_limit` - Maximum requests per minute (default: 5 for free tier)
+    pub fn new(api_key: impl Into<String>, rate_limit: u32) -> Self {
+        // Create rate limiter quota (requests per minute)
+        let quota =
+            Quota::per_minute(NonZeroU32::new(rate_limit).unwrap_or(NonZeroU32::new(5).unwrap()));
+        let rate_limiter = Arc::new(RateLimiter::direct(quota));
+
         Self {
             client: Client::new(),
             api_key: api_key.into(),
+            rate_limiter,
         }
     }
 
-    /// Create from environment variable ALPHA_VANTAGE_API_KEY
+    /// Create from environment variable ALPHA_VANTAGE_API_KEY with default rate limit
     pub fn from_env() -> Result<Self> {
-        let api_key = std::env::var("ALPHA_VANTAGE_API_KEY")
-            .map_err(|_| StockError::ConfigError(
-                "ALPHA_VANTAGE_API_KEY environment variable not set".to_string()
-            ))?;
+        let api_key = std::env::var("ALPHA_VANTAGE_API_KEY").map_err(|_| {
+            StockError::ConfigError(
+                "ALPHA_VANTAGE_API_KEY environment variable not set".to_string(),
+            )
+        })?;
 
-        Ok(Self::new(api_key))
+        Ok(Self::new(api_key, 5)) // Default to free tier limit
     }
 
     /// Get intraday time series data
     pub async fn get_intraday(
         &self,
         symbol: &str,
-        interval: &str,  // 1min, 5min, 15min, 30min, 60min
+        interval: &str, // 1min, 5min, 15min, 30min, 60min
     ) -> Result<Vec<TimeSeriesData>> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
         let mut params = HashMap::new();
         params.insert("function", "TIME_SERIES_INTRADAY");
         params.insert("symbol", symbol);
         params.insert("interval", interval);
         params.insert("apikey", &self.api_key);
 
-        let response = self.client
-            .get(BASE_URL)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
 
         if !response.status().is_success() {
-            return Err(StockError::AlphaVantageError(
-                format!("HTTP error: {}", response.status())
-            ));
+            return Err(StockError::AlphaVantageError(format!(
+                "HTTP error: {}",
+                response.status()
+            )));
         }
 
         let data: serde_json::Value = response.json().await?;
@@ -96,7 +115,7 @@ impl AlphaVantageClient {
             return Err(StockError::AlphaVantageError(error.to_string()));
         }
 
-        if let Some(note) = data.get("Note") {
+        if let Some(_note) = data.get("Note") {
             return Err(StockError::RateLimitExceeded {
                 provider: "Alpha Vantage".to_string(),
             });
@@ -104,17 +123,38 @@ impl AlphaVantageClient {
 
         // Parse time series data
         let series_key = format!("Time Series ({})", interval);
-        let series = data.get(&series_key)
-            .ok_or_else(|| StockError::AlphaVantageError("No time series data found".to_string()))?;
+        let series = data.get(&series_key).ok_or_else(|| {
+            StockError::AlphaVantageError("No time series data found".to_string())
+        })?;
 
         let mut result = Vec::new();
         if let Some(obj) = series.as_object() {
             for (timestamp, values) in obj {
-                let open = values["1. open"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let high = values["2. high"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let low = values["3. low"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let close = values["4. close"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let volume = values["5. volume"].as_str().unwrap_or("0").parse().unwrap_or(0);
+                let open = values["1. open"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let high = values["2. high"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let low = values["3. low"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let close = values["4. close"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let volume = values["5. volume"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0);
 
                 result.push(TimeSeriesData {
                     timestamp: timestamp.clone(),
@@ -132,16 +172,15 @@ impl AlphaVantageClient {
 
     /// Get daily time series data
     pub async fn get_daily(&self, symbol: &str) -> Result<Vec<TimeSeriesData>> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
         let mut params = HashMap::new();
         params.insert("function", "TIME_SERIES_DAILY");
         params.insert("symbol", symbol);
         params.insert("apikey", &self.api_key);
 
-        let response = self.client
-            .get(BASE_URL)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
 
         let data: serde_json::Value = response.json().await?;
 
@@ -150,24 +189,45 @@ impl AlphaVantageClient {
             return Err(StockError::AlphaVantageError(error.to_string()));
         }
 
-        if let Some(note) = data.get("Note") {
+        if let Some(_note) = data.get("Note") {
             return Err(StockError::RateLimitExceeded {
                 provider: "Alpha Vantage".to_string(),
             });
         }
 
         // Parse time series data
-        let series = data.get("Time Series (Daily)")
+        let series = data
+            .get("Time Series (Daily)")
             .ok_or_else(|| StockError::AlphaVantageError("No daily data found".to_string()))?;
 
         let mut result = Vec::new();
         if let Some(obj) = series.as_object() {
             for (timestamp, values) in obj {
-                let open = values["1. open"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let high = values["2. high"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let low = values["3. low"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let close = values["4. close"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let volume = values["5. volume"].as_str().unwrap_or("0").parse().unwrap_or(0);
+                let open = values["1. open"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let high = values["2. high"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let low = values["3. low"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let close = values["4. close"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0.0);
+                let volume = values["5. volume"]
+                    .as_str()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0);
 
                 result.push(TimeSeriesData {
                     timestamp: timestamp.clone(),
@@ -185,16 +245,15 @@ impl AlphaVantageClient {
 
     /// Get company overview and fundamental data
     pub async fn get_company_overview(&self, symbol: &str) -> Result<CompanyOverview> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
         let mut params = HashMap::new();
         params.insert("function", "OVERVIEW");
         params.insert("symbol", symbol);
         params.insert("apikey", &self.api_key);
 
-        let response = self.client
-            .get(BASE_URL)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
 
         let data: serde_json::Value = response.json().await?;
 
@@ -203,7 +262,7 @@ impl AlphaVantageClient {
             return Err(StockError::AlphaVantageError(error.to_string()));
         }
 
-        if let Some(note) = data.get("Note") {
+        if let Some(_note) = data.get("Note") {
             return Err(StockError::RateLimitExceeded {
                 provider: "Alpha Vantage".to_string(),
             });
@@ -220,16 +279,15 @@ impl AlphaVantageClient {
 
     /// Get global quote (current price data)
     pub async fn get_quote(&self, symbol: &str) -> Result<serde_json::Value> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
         let mut params = HashMap::new();
         params.insert("function", "GLOBAL_QUOTE");
         params.insert("symbol", symbol);
         params.insert("apikey", &self.api_key);
 
-        let response = self.client
-            .get(BASE_URL)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
 
         let data: serde_json::Value = response.json().await?;
 
@@ -238,7 +296,7 @@ impl AlphaVantageClient {
             return Err(StockError::AlphaVantageError(error.to_string()));
         }
 
-        if let Some(note) = data.get("Note") {
+        if let Some(_note) = data.get("Note") {
             return Err(StockError::RateLimitExceeded {
                 provider: "Alpha Vantage".to_string(),
             });
@@ -249,16 +307,15 @@ impl AlphaVantageClient {
 
     /// Search for symbols
     pub async fn search_symbol(&self, keywords: &str) -> Result<Vec<serde_json::Value>> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
         let mut params = HashMap::new();
         params.insert("function", "SYMBOL_SEARCH");
         params.insert("keywords", keywords);
         params.insert("apikey", &self.api_key);
 
-        let response = self.client
-            .get(BASE_URL)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
 
         let data: serde_json::Value = response.json().await?;
 
@@ -278,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        let client = AlphaVantageClient::new("test_key");
+        let client = AlphaVantageClient::new("test_key", 5);
         assert_eq!(client.api_key, "test_key");
     }
 
