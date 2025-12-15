@@ -1,13 +1,20 @@
 //! Tool registry for managing available tools
 
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use crate::Tool;
 
 /// Registry for managing tools
-#[derive(Default)]
 pub struct ToolRegistry {
-    tools: HashMap<String, Arc<dyn Tool>>,
+    tools: RwLock<HashMap<String, Arc<dyn Tool>>>,
+}
+
+impl Default for ToolRegistry {
+    fn default() -> Self {
+        Self {
+            tools: RwLock::new(HashMap::new()),
+        }
+    }
 }
 
 impl ToolRegistry {
@@ -17,13 +24,15 @@ impl ToolRegistry {
     }
 
     /// Register a tool
-    pub fn register(&mut self, tool: Arc<dyn Tool>) {
-        self.tools.insert(tool.name().to_string(), tool);
+    pub fn register(&self, tool: Arc<dyn Tool>) {
+        let mut tools = self.tools.write().unwrap();
+        tools.insert(tool.name().to_string(), tool);
     }
 
     /// Get a tool by name
-    pub fn get(&self, name: &str) -> Option<&Arc<dyn Tool>> {
-        self.tools.get(name)
+    pub fn get(&self, name: &str) -> Option<Arc<dyn Tool>> {
+        let tools = self.tools.read().unwrap();
+        tools.get(name).cloned()
     }
 
     /// List all registered tools
@@ -31,16 +40,19 @@ impl ToolRegistry {
     /// Returns a vector of all tools in the registry. This is useful for
     /// building tool definitions to send to the LLM.
     pub fn list_tools(&self) -> Vec<Arc<dyn Tool>> {
-        self.tools.values().cloned().collect()
+        let tools = self.tools.read().unwrap();
+        tools.values().cloned().collect()
     }
 
     /// Get the number of registered tools
     pub fn len(&self) -> usize {
-        self.tools.len()
+        let tools = self.tools.read().unwrap();
+        tools.len()
     }
 
     /// Check if the registry is empty
     pub fn is_empty(&self) -> bool {
-        self.tools.is_empty()
+        let tools = self.tools.read().unwrap();
+        tools.is_empty()
     }
 }

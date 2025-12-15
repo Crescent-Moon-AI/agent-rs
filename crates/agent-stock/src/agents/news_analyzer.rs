@@ -1,0 +1,81 @@
+//! News and sentiment analysis agent
+
+use agent_core::{Agent, Context, Result};
+use agent_runtime::{AgentRuntime, ExecutorConfig};
+use async_trait::async_trait;
+use std::sync::Arc;
+
+use crate::cache::CacheManager;
+use crate::config::StockConfig;
+use crate::tools::NewsTool;
+
+const SYSTEM_PROMPT: &str = r#"You are a news and sentiment analyst specializing in stock market events.
+
+Your expertise includes:
+- Market news analysis
+- Sentiment assessment (positive, negative, neutral)
+- Event impact evaluation (earnings, product launches, regulatory changes)
+- Trend identification in news flow
+
+When analyzing news:
+1. Fetch recent news articles for the stock
+2. Identify key events and developments
+3. Assess overall market sentiment
+4. Evaluate potential impact on stock price
+5. Note any significant trends or patterns in news flow
+
+Be objective in your sentiment assessment. Distinguish between:
+- Company-specific news vs. market-wide news
+- Short-term events vs. long-term trends
+- Material news vs. noise
+
+Provide context for why certain news might impact the stock.
+"#;
+
+/// Agent specialized in news and sentiment analysis
+pub struct NewsAnalyzerAgent {
+    agent: agent_runtime::agents::ToolAgent,
+}
+
+impl NewsAnalyzerAgent {
+    /// Create a new news analyzer agent
+    pub async fn new(runtime: Arc<AgentRuntime>, config: Arc<StockConfig>) -> Result<Self> {
+        let cache_mgr = CacheManager::new(
+            config.cache_ttl_realtime,
+            config.cache_ttl_fundamental,
+            config.cache_ttl_news,
+        );
+
+        // Create tools
+        let news_tool = Arc::new(NewsTool::new(
+            Arc::clone(&config),
+            cache_mgr.news.clone(),
+        ));
+
+        // Register tools
+        runtime.tools().register(news_tool);
+
+        let executor_config = ExecutorConfig {
+            model: "claude-opus-4-5-20251101".to_string(),
+            system_prompt: Some(SYSTEM_PROMPT.to_string()),
+            max_tokens: 4096,
+            temperature: Some(0.5), // Slightly higher for nuanced analysis
+            max_iterations: 5,
+        };
+
+        let agent = runtime.create_tool_agent(executor_config, "news-analyzer");
+
+        Ok(Self { agent })
+    }
+}
+
+#[async_trait]
+impl Agent for NewsAnalyzerAgent {
+    async fn process(&self, input: String, context: &mut Context) -> Result<String> {
+        self.agent.process(input, context).await
+    }
+
+    fn name(&self) -> &str {
+        "NewsAnalyzerAgent"
+    }
+}

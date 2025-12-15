@@ -1,0 +1,46 @@
+[package]
+name = "agent-stock"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Internal crates
+agent-core = { workspace = true }
+agent-llm = { workspace = true }
+agent-runtime = { workspace = true }
+agent-tools = { workspace = true }
+agent-utils = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Stock-specific dependencies
+rust_ti = { workspace = true }
+ta = { workspace = true }
+chrono = { workspace = true }
+time = { workspace = true }
+cached = { workspace = true }
+yahoo_finance_api = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+tokio-test = { workspace = true }
+
+[features]
+default = []
