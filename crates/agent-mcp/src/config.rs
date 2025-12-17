@@ -192,13 +192,11 @@ impl MCPConfig {
     /// # Ok::<(), agent_mcp::error::MCPError>(())
     /// ```
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, MCPError> {
-        let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-            MCPError::ConfigError(format!("Failed to read config file: {}", e))
-        })?;
+        let content = std::fs::read_to_string(path.as_ref())
+            .map_err(|e| MCPError::ConfigError(format!("Failed to read config file: {}", e)))?;
 
-        let mut config: MCPConfig = serde_json::from_str(&content).map_err(|e| {
-            MCPError::ConfigError(format!("Failed to parse config file: {}", e))
-        })?;
+        let mut config: MCPConfig = serde_json::from_str(&content)
+            .map_err(|e| MCPError::ConfigError(format!("Failed to parse config file: {}", e)))?;
 
         // Resolve environment variables
         config.resolve_env_vars()?;
@@ -326,13 +324,11 @@ impl MCPConfig {
     ///
     /// * `path` - Path to save the configuration file
     pub fn save_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), MCPError> {
-        let json = serde_json::to_string_pretty(self).map_err(|e| {
-            MCPError::ConfigError(format!("Failed to serialize config: {}", e))
-        })?;
+        let json = serde_json::to_string_pretty(self)
+            .map_err(|e| MCPError::ConfigError(format!("Failed to serialize config: {}", e)))?;
 
-        std::fs::write(path.as_ref(), json).map_err(|e| {
-            MCPError::ConfigError(format!("Failed to write config file: {}", e))
-        })?;
+        std::fs::write(path.as_ref(), json)
+            .map_err(|e| MCPError::ConfigError(format!("Failed to write config file: {}", e)))?;
 
         Ok(())
     }
@@ -360,8 +356,8 @@ pub fn resolve_env_string(s: &str) -> Result<String, MCPError> {
 
     for cap in re_braces.captures_iter(s) {
         let var_name = &cap[1];
-        let value = std::env::var(var_name)
-            .map_err(|_| MCPError::EnvVarNotFound(var_name.to_string()))?;
+        let value =
+            std::env::var(var_name).map_err(|_| MCPError::EnvVarNotFound(var_name.to_string()))?;
         result = result.replace(&cap[0], &value);
     }
 
@@ -371,8 +367,8 @@ pub fn resolve_env_string(s: &str) -> Result<String, MCPError> {
 
     for cap in re_simple.captures_iter(&result.clone()) {
         let var_name = &cap[1];
-        let value = std::env::var(var_name)
-            .map_err(|_| MCPError::EnvVarNotFound(var_name.to_string()))?;
+        let value =
+            std::env::var(var_name).map_err(|_| MCPError::EnvVarNotFound(var_name.to_string()))?;
         result = result.replace(&cap[0], &value);
     }
 

@@ -15,16 +15,11 @@ pub enum StockError {
 
     /// Data not available for the requested symbol
     #[error("Data not available for {symbol}: {reason}")]
-    DataUnavailable {
-        symbol: String,
-        reason: String,
-    },
+    DataUnavailable { symbol: String, reason: String },
 
     /// Rate limit exceeded for API
     #[error("Rate limit exceeded for {provider}")]
-    RateLimitExceeded {
-        provider: String,
-    },
+    RateLimitExceeded { provider: String },
 
     /// Network or HTTP error
     #[error("Network error: {0}")]
@@ -96,7 +91,10 @@ mod tests {
             symbol: "AAPL".to_string(),
             reason: "No data found".to_string(),
         };
-        assert_eq!(err.to_string(), "Data not available for AAPL: No data found");
+        assert_eq!(
+            err.to_string(),
+            "Data not available for AAPL: No data found"
+        );
     }
 
     #[test]
@@ -107,7 +105,7 @@ mod tests {
         match agent_err {
             agent_core::Error::ProcessingFailed(msg) => {
                 assert!(msg.contains("API error"));
-            },
+            }
             _ => panic!("Expected ProcessingFailed variant"),
         }
     }

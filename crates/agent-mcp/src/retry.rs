@@ -96,9 +96,7 @@ impl RetryPolicy {
     fn is_retryable(error: &MCPError) -> bool {
         matches!(
             error,
-            MCPError::ConnectionFailed(_)
-                | MCPError::RequestFailed(_)
-                | MCPError::NotConnected
+            MCPError::ConnectionFailed(_) | MCPError::RequestFailed(_) | MCPError::NotConnected
         )
     }
 
@@ -139,7 +137,10 @@ impl RetryPolicy {
                 }
                 Err(e) => {
                     if !Self::is_retryable(&e) {
-                        debug!("Operation '{}' failed with non-retryable error", operation_name);
+                        debug!(
+                            "Operation '{}' failed with non-retryable error",
+                            operation_name
+                        );
                         return Err(e);
                     }
 
@@ -162,9 +163,8 @@ impl RetryPolicy {
         }
 
         // All attempts failed
-        let error = last_error.unwrap_or_else(|| {
-            MCPError::InternalError("Retry failed with no error".to_string())
-        });
+        let error = last_error
+            .unwrap_or_else(|| MCPError::InternalError("Retry failed with no error".to_string()));
 
         warn!(
             "Operation '{}' failed after {} attempts: {:?}",
@@ -209,12 +209,7 @@ mod tests {
 
     #[test]
     fn test_backoff_capped_at_max() {
-        let policy = RetryPolicy::new(
-            10,
-            Duration::from_secs(1),
-            Duration::from_secs(5),
-            2.0,
-        );
+        let policy = RetryPolicy::new(10, Duration::from_secs(1), Duration::from_secs(5), 2.0);
 
         // Should be capped at 5 seconds
         assert!(policy.backoff_duration(10) <= Duration::from_secs(5));

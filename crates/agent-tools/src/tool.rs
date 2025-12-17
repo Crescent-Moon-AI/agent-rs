@@ -1,7 +1,7 @@
 //! Tool trait definition
 
-use async_trait::async_trait;
 use agent_core::Result;
+use async_trait::async_trait;
 use serde_json::Value;
 
 /// Trait for tools that agents can execute

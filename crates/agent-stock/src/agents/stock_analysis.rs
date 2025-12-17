@@ -5,10 +5,12 @@ use agent_runtime::{AgentRuntime, agents::DelegatingAgentBuilder};
 use async_trait::async_trait;
 use std::sync::Arc;
 
+use super::{
+    DataFetcherAgent, FundamentalAnalyzerAgent, NewsAnalyzerAgent, TechnicalAnalyzerAgent,
+};
 use crate::config::StockConfig;
-use super::{DataFetcherAgent, TechnicalAnalyzerAgent, FundamentalAnalyzerAgent, NewsAnalyzerAgent};
 
-const SYSTEM_PROMPT: &str = r#"You are a comprehensive stock analysis assistant with access to specialized sub-agents.
+const _SYSTEM_PROMPT: &str = r#"You are a comprehensive stock analysis assistant with access to specialized sub-agents.
 
 You have four expert sub-agents at your disposal:
 1. **DataFetcherAgent**: Retrieves current prices, quotes, and historical data
@@ -45,26 +47,49 @@ impl StockAnalysisAgent {
     /// Create a new stock analysis agent
     pub async fn new(runtime: Arc<AgentRuntime>, config: Arc<StockConfig>) -> Result<Self> {
         // Create specialist agents
-        let data_fetcher = Arc::new(DataFetcherAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
-        let technical_analyzer = Arc::new(TechnicalAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
-        let fundamental_analyzer = Arc::new(FundamentalAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
-        let news_analyzer = Arc::new(NewsAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
+        let data_fetcher =
+            Arc::new(DataFetcherAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
+        let technical_analyzer =
+            Arc::new(TechnicalAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
+        let fundamental_analyzer = Arc::new(
+            FundamentalAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?,
+        );
+        let news_analyzer =
+            Arc::new(NewsAnalyzerAgent::new(Arc::clone(&runtime), Arc::clone(&config)).await?);
 
         // Create routing function
         let router = |input: &str, _context: &Context| -> String {
             let input_lower = input.to_lowercase();
 
             // Check for specific keywords to route to appropriate agent
-            if input_lower.contains("price") || input_lower.contains("quote") || input_lower.contains("historical") {
+            if input_lower.contains("price")
+                || input_lower.contains("quote")
+                || input_lower.contains("historical")
+            {
                 "data-fetcher".to_string()
-            } else if input_lower.contains("rsi") || input_lower.contains("macd") || input_lower.contains("technical")
-                || input_lower.contains("indicator") || input_lower.contains("chart") || input_lower.contains("bollinger")
-                || input_lower.contains("moving average") || input_lower.contains("sma") || input_lower.contains("ema") {
+            } else if input_lower.contains("rsi")
+                || input_lower.contains("macd")
+                || input_lower.contains("technical")
+                || input_lower.contains("indicator")
+                || input_lower.contains("chart")
+                || input_lower.contains("bollinger")
+                || input_lower.contains("moving average")
+                || input_lower.contains("sma")
+                || input_lower.contains("ema")
+            {
                 "technical-analyzer".to_string()
-            } else if input_lower.contains("p/e") || input_lower.contains("fundamental") || input_lower.contains("valuation")
-                || input_lower.contains("earnings") || input_lower.contains("market cap") || input_lower.contains("dividend") {
+            } else if input_lower.contains("p/e")
+                || input_lower.contains("fundamental")
+                || input_lower.contains("valuation")
+                || input_lower.contains("earnings")
+                || input_lower.contains("market cap")
+                || input_lower.contains("dividend")
+            {
                 "fundamental-analyzer".to_string()
-            } else if input_lower.contains("news") || input_lower.contains("sentiment") || input_lower.contains("events") {
+            } else if input_lower.contains("news")
+                || input_lower.contains("sentiment")
+                || input_lower.contains("events")
+            {
                 "news-analyzer".to_string()
             } else {
                 // For comprehensive analysis or unclear requests, use technical analyzer as default
@@ -99,14 +124,20 @@ impl StockAnalysisAgent {
     /// Get technical analysis only
     pub async fn analyze_technical(&self, symbol: &str) -> Result<String> {
         let mut context = Context::new();
-        let input = format!("Perform technical analysis on {} using RSI, MACD, and moving averages.", symbol);
+        let input = format!(
+            "Perform technical analysis on {} using RSI, MACD, and moving averages.",
+            symbol
+        );
         self.process(input, &mut context).await
     }
 
     /// Get fundamental analysis only
     pub async fn analyze_fundamental(&self, symbol: &str) -> Result<String> {
         let mut context = Context::new();
-        let input = format!("Analyze the fundamental metrics and valuation of {}.", symbol);
+        let input = format!(
+            "Analyze the fundamental metrics and valuation of {}.",
+            symbol
+        );
         self.process(input, &mut context).await
     }
 
@@ -153,8 +184,14 @@ mod tests {
         let ctx = Context::new();
 
         assert_eq!(router("What's the price of AAPL?", &ctx), "data-fetcher");
-        assert_eq!(router("Calculate RSI for GOOGL", &ctx), "technical-analyzer");
-        assert_eq!(router("What's the P/E ratio of MSFT?", &ctx), "fundamental-analyzer");
+        assert_eq!(
+            router("Calculate RSI for GOOGL", &ctx),
+            "technical-analyzer"
+        );
+        assert_eq!(
+            router("What's the P/E ratio of MSFT?", &ctx),
+            "fundamental-analyzer"
+        );
         assert_eq!(router("Latest news on TSLA", &ctx), "news-analyzer");
     }
 }

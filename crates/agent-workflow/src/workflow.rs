@@ -65,7 +65,10 @@ impl Workflow {
     /// # Returns
     ///
     /// The final output after all steps have been executed
-    pub fn execute(&self, initial_input: String) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send + '_>> {
+    pub fn execute(
+        &self,
+        initial_input: String,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send + '_>> {
         Box::pin(async move {
             let mut context = Context::new();
             let mut current_output = initial_input;
@@ -76,9 +79,7 @@ impl Workflow {
                     WorkflowStep::Agent(agent) => {
                         agent.process(current_output, &mut context).await?
                     }
-                    WorkflowStep::SubWorkflow(workflow) => {
-                        workflow.execute(current_output).await?
-                    }
+                    WorkflowStep::SubWorkflow(workflow) => workflow.execute(current_output).await?,
                 };
             }
 
@@ -125,7 +126,8 @@ impl WorkflowBuilder {
     ///
     /// * `workflow` - The workflow to nest
     pub fn add_workflow(mut self, workflow: Workflow) -> Self {
-        self.steps.push(WorkflowStep::SubWorkflow(Arc::new(workflow)));
+        self.steps
+            .push(WorkflowStep::SubWorkflow(Arc::new(workflow)));
         self
     }
 

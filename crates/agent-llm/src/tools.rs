@@ -36,7 +36,7 @@ impl ToolDefinition {
 
 /// Helper module to build JSON schemas for tools
 pub mod schema {
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     /// Create a JSON schema for an object with properties
     ///

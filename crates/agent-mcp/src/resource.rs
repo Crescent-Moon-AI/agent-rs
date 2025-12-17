@@ -4,8 +4,8 @@
 //! resources from MCP servers. Resources are data sources that agents can
 //! access, such as files, documents, or database entries.
 
-use crate::client::{MCPContent, MCPResourceInfo};
 use crate::MCPClientManager;
+use crate::client::{MCPContent, MCPResourceInfo};
 use crate::error::MCPError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -58,12 +58,16 @@ impl MCPResource {
 
     /// Check if this resource has text content
     pub fn has_text(&self) -> bool {
-        self.content.iter().any(|c| matches!(c, MCPContent::Text { .. }))
+        self.content
+            .iter()
+            .any(|c| matches!(c, MCPContent::Text { .. }))
     }
 
     /// Check if this resource has image content
     pub fn has_image(&self) -> bool {
-        self.content.iter().any(|c| matches!(c, MCPContent::Image { .. }))
+        self.content
+            .iter()
+            .any(|c| matches!(c, MCPContent::Image { .. }))
     }
 }
 
@@ -119,7 +123,8 @@ impl ResourceCache {
             .ok_or_else(|| MCPError::ResourceNotFound(uri.to_string()))?;
 
         // Read the resource content
-        let content = self.manager
+        let content = self
+            .manager
             .read_resource(&resource_info.server_name, uri)
             .await?;
 
@@ -257,20 +262,15 @@ mod tests {
 
     #[test]
     fn test_resource_filter_specific_pattern() {
-        let filter = ResourceFilter::new(
-            vec!["file:///*.txt".to_string()],
-            vec![]
-        );
+        let filter = ResourceFilter::new(vec!["file:///*.txt".to_string()], vec![]);
         assert!(filter.should_include("file:///test.txt"));
         assert!(!filter.should_include("file:///test.md"));
     }
 
     #[test]
     fn test_resource_filter_deny_overrides() {
-        let filter = ResourceFilter::new(
-            vec!["*".to_string()],
-            vec!["file:///*.secret".to_string()]
-        );
+        let filter =
+            ResourceFilter::new(vec!["*".to_string()], vec!["file:///*.secret".to_string()]);
         assert!(filter.should_include("file:///test.txt"));
         assert!(!filter.should_include("file:///password.secret"));
     }
@@ -282,8 +282,12 @@ mod tests {
             mime_type: Some("text/plain".to_string()),
             description: None,
             content: vec![
-                MCPContent::Text { text: "Hello".to_string() },
-                MCPContent::Text { text: "World".to_string() },
+                MCPContent::Text {
+                    text: "Hello".to_string(),
+                },
+                MCPContent::Text {
+                    text: "World".to_string(),
+                },
             ],
             server_name: "test".to_string(),
         };
@@ -297,7 +301,9 @@ mod tests {
             uri: "test://text".to_string(),
             mime_type: None,
             description: None,
-            content: vec![MCPContent::Text { text: "test".to_string() }],
+            content: vec![MCPContent::Text {
+                text: "test".to_string(),
+            }],
             server_name: "test".to_string(),
         };
 

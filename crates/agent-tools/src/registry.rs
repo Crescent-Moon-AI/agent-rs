@@ -1,8 +1,8 @@
 //! Tool registry for managing available tools
 
+use crate::Tool;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use crate::Tool;
 
 /// Registry for managing tools
 pub struct ToolRegistry {

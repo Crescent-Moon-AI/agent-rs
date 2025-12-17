@@ -20,7 +20,6 @@ use tracing::{debug, info};
 pub struct HttpMCPClient {
     url: String,
     headers: HashMap<String, String>,
-    timeout: Duration,
 
     /// HTTP client
     http_client: reqwest::Client,
@@ -55,7 +54,6 @@ impl HttpMCPClient {
         Self {
             url,
             headers,
-            timeout,
             http_client,
             server_info: Arc::new(Mutex::new(None)),
             connected: Arc::new(Mutex::new(false)),
@@ -106,10 +104,12 @@ impl HttpMCPClient {
         header_map.insert("Content-Type", HeaderValue::from_static("application/json"));
 
         for (key, value) in &self.headers {
-            let name = HeaderName::from_str(key)
-                .map_err(|e| MCPError::ConfigError(format!("Invalid header name '{}': {}", key, e)))?;
-            let value = HeaderValue::from_str(value)
-                .map_err(|e| MCPError::ConfigError(format!("Invalid header value '{}': {}", value, e)))?;
+            let name = HeaderName::from_str(key).map_err(|e| {
+                MCPError::ConfigError(format!("Invalid header name '{}': {}", key, e))
+            })?;
+            let value = HeaderValue::from_str(value).map_err(|e| {
+                MCPError::ConfigError(format!("Invalid header value '{}': {}", value, e))
+            })?;
             header_map.insert(name, value);
         }
 
@@ -131,7 +131,8 @@ impl HttpMCPClient {
 
         let headers = self.build_headers()?;
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&self.url)
             .headers(headers)
             .json(&request)
@@ -148,7 +149,9 @@ impl HttpMCPClient {
             )));
         }
 
-        let response_json: Value = response.json().await
+        let response_json: Value = response
+            .json()
+            .await
             .map_err(|e| MCPError::RequestFailed(format!("Failed to parse response: {}", e)))?;
 
         debug!("Received response for: {}", method);
@@ -159,7 +162,8 @@ impl HttpMCPClient {
         }
 
         // Return result
-        response_json.get("result")
+        response_json
+            .get("result")
             .cloned()
             .ok_or_else(|| MCPError::RequestFailed("No result in response".to_string()))
     }
@@ -182,9 +186,8 @@ impl HttpMCPClient {
         let result = self.send_request("initialize", params).await?;
 
         // Parse server info
-        let capabilities: MCPServerCapabilities = serde_json::from_value(
-            result["capabilities"].clone()
-        ).unwrap_or_default();
+        let capabilities: MCPServerCapabilities =
+            serde_json::from_value(result["capabilities"].clone()).unwrap_or_default();
 
         let server_info = MCPServerInfo {
             name: result["serverInfo"]["name"]
@@ -202,7 +205,10 @@ impl HttpMCPClient {
             capabilities,
         };
 
-        info!("Connected to MCP server: {} v{}", server_info.name, server_info.version);
+        info!(
+            "Connected to MCP server: {} v{}",
+            server_info.name, server_info.version
+        );
 
         // Send initialized notification (fire and forget)
         let notification = serde_json::json!({
@@ -211,7 +217,8 @@ impl HttpMCPClient {
         });
 
         let headers = self.build_headers()?;
-        let _ = self.http_client
+        let _ = self
+            .http_client
             .post(&self.url)
             .headers(headers)
             .json(&notification)
@@ -244,7 +251,8 @@ impl MCPClient for HttpMCPClient {
 
     fn is_connected(&self) -> bool {
         // Non-blocking check using try_lock
-        self.connected.try_lock()
+        self.connected
+            .try_lock()
             .map(|guard| *guard)
             .unwrap_or(false)
     }
@@ -260,7 +268,9 @@ impl MCPClient for HttpMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("tools/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("tools/list", serde_json::json!({}))
+            .await?;
 
         let tools: Vec<MCPToolDefinition> = serde_json::from_value(result["tools"].clone())
             .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {}", e)))?;
@@ -291,10 +301,14 @@ impl MCPClient for HttpMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("resources/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("resources/list", serde_json::json!({}))
+            .await?;
 
-        let resources: Vec<MCPResourceDefinition> = serde_json::from_value(result["resources"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resources: {}", e)))?;
+        let resources: Vec<MCPResourceDefinition> =
+            serde_json::from_value(result["resources"].clone()).map_err(|e| {
+                MCPError::RequestFailed(format!("Failed to parse resources: {}", e))
+            })?;
 
         Ok(resources)
     }
@@ -321,19 +335,18 @@ impl MCPClient for HttpMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("prompts/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("prompts/list", serde_json::json!({}))
+            .await?;
 
-        let prompts: Vec<MCPPromptDefinition> = serde_json::from_value(result["prompts"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
+        let prompts: Vec<MCPPromptDefinition> =
+            serde_json::from_value(result["prompts"].clone())
+                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
 
         Ok(prompts)
     }
 
-    async fn get_prompt(
-        &self,
-        name: &str,
-        arguments: Option<Value>,
-    ) -> Result<MCPPromptResult> {
+    async fn get_prompt(&self, name: &str, arguments: Option<Value>) -> Result<MCPPromptResult> {
         if !self.is_connected() {
             return Err(MCPError::NotConnected);
         }
@@ -369,7 +382,6 @@ mod tests {
         );
 
         assert_eq!(client.url, "http://localhost:8080/mcp");
-        assert_eq!(client.timeout, Duration::from_secs(30));
     }
 
     #[test]
@@ -394,7 +406,6 @@ mod tests {
 
         let client = HttpMCPClient::from_config(&config).unwrap();
         assert_eq!(client.url, "http://example.com/sse");
-        assert_eq!(client.timeout, Duration::from_secs(60));
     }
 
     #[test]
@@ -424,17 +435,8 @@ mod tests {
 
         let header_map = client.build_headers().unwrap();
 
-        assert_eq!(
-            header_map.get("Content-Type").unwrap(),
-            "application/json"
-        );
-        assert_eq!(
-            header_map.get("Authorization").unwrap(),
-            "Bearer token123"
-        );
-        assert_eq!(
-            header_map.get("X-Custom").unwrap(),
-            "value"
-        );
+        assert_eq!(header_map.get("Content-Type").unwrap(), "application/json");
+        assert_eq!(header_map.get("Authorization").unwrap(), "Bearer token123");
+        assert_eq!(header_map.get("X-Custom").unwrap(), "value");
     }
 }

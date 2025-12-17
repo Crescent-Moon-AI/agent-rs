@@ -57,8 +57,7 @@ impl YahooFinanceClient {
 
         Ok(Quote {
             symbol: symbol.to_string(),
-            timestamp: DateTime::from_timestamp(quote.timestamp as i64, 0)
-                .unwrap_or_else(Utc::now),
+            timestamp: DateTime::from_timestamp(quote.timestamp, 0).unwrap_or_else(Utc::now),
             open: quote.open,
             high: quote.high,
             low: quote.low,
@@ -79,8 +78,9 @@ impl YahooFinanceClient {
             .map_err(|e| StockError::YahooFinanceError(e.to_string()))?;
 
         // Convert chrono DateTime to time OffsetDateTime
-        let start_odt = OffsetDateTime::from_unix_timestamp(start.timestamp())
-            .map_err(|e| StockError::YahooFinanceError(format!("Invalid start timestamp: {}", e)))?;
+        let start_odt = OffsetDateTime::from_unix_timestamp(start.timestamp()).map_err(|e| {
+            StockError::YahooFinanceError(format!("Invalid start timestamp: {}", e))
+        })?;
         let end_odt = OffsetDateTime::from_unix_timestamp(end.timestamp())
             .map_err(|e| StockError::YahooFinanceError(format!("Invalid end timestamp: {}", e)))?;
 
@@ -97,8 +97,7 @@ impl YahooFinanceClient {
             .iter()
             .map(|q| Quote {
                 symbol: symbol.to_string(),
-                timestamp: DateTime::from_timestamp(q.timestamp as i64, 0)
-                    .unwrap_or_else(Utc::now),
+                timestamp: DateTime::from_timestamp(q.timestamp, 0).unwrap_or_else(Utc::now),
                 open: q.open,
                 high: q.high,
                 low: q.low,
@@ -113,7 +112,7 @@ impl YahooFinanceClient {
     pub async fn get_historical_range(
         &self,
         symbol: &str,
-        range: &str,  // e.g., "1mo", "3mo", "1y"
+        range: &str, // e.g., "1mo", "3mo", "1y"
     ) -> Result<Vec<Quote>> {
         let end = Utc::now();
         let start = match range {
@@ -133,9 +132,14 @@ impl YahooFinanceClient {
                     .and_hms_opt(0, 0, 0)
                     .unwrap()
                     .and_utc()
-            },
+            }
             "max" => end - chrono::Duration::days(36500), // ~100 years
-            _ => return Err(StockError::InvalidSymbol(format!("Invalid range: {}", range))),
+            _ => {
+                return Err(StockError::InvalidSymbol(format!(
+                    "Invalid range: {}",
+                    range
+                )));
+            }
         };
 
         self.get_historical_quotes(symbol, start, end).await
@@ -213,6 +217,11 @@ mod tests {
         let client = YahooFinanceClient::new();
 
         assert!(client.validate_symbol("AAPL").await.unwrap());
-        assert!(!client.validate_symbol("INVALID_SYMBOL_12345").await.unwrap());
+        assert!(
+            !client
+                .validate_symbol("INVALID_SYMBOL_12345")
+                .await
+                .unwrap()
+        );
     }
 }

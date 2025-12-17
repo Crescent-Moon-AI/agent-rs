@@ -1,8 +1,8 @@
 //! Workflow agent implementation (wraps a workflow as an agent)
 
+use crate::workflow::Workflow;
 use agent_core::{Agent, Context, Result};
 use async_trait::async_trait;
-use crate::workflow::Workflow;
 
 /// Wraps a Workflow as an Agent
 ///

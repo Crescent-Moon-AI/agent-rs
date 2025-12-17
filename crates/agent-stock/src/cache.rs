@@ -20,7 +20,11 @@ pub struct CacheKey {
 
 impl CacheKey {
     /// Create a new cache key
-    pub fn new(symbol: impl Into<String>, endpoint: impl Into<String>, params: impl Serialize) -> Self {
+    pub fn new(
+        symbol: impl Into<String>,
+        endpoint: impl Into<String>,
+        params: impl Serialize,
+    ) -> Self {
         Self {
             symbol: symbol.into(),
             endpoint: endpoint.into(),
@@ -128,11 +132,7 @@ pub struct CacheManager {
 
 impl CacheManager {
     /// Create a new cache manager with specified TTLs
-    pub fn new(
-        realtime_ttl: Duration,
-        fundamental_ttl: Duration,
-        news_ttl: Duration,
-    ) -> Self {
+    pub fn new(realtime_ttl: Duration, fundamental_ttl: Duration, news_ttl: Duration) -> Self {
         Self {
             realtime: StockCache::new(realtime_ttl),
             fundamental: StockCache::new(fundamental_ttl),
@@ -143,9 +143,9 @@ impl CacheManager {
     /// Create a default cache manager
     pub fn default_config() -> Self {
         Self::new(
-            Duration::from_secs(60),    // 1 minute for realtime
-            Duration::from_secs(3600),  // 1 hour for fundamental
-            Duration::from_secs(300),   // 5 minutes for news
+            Duration::from_secs(60),   // 1 minute for realtime
+            Duration::from_secs(3600), // 1 hour for fundamental
+            Duration::from_secs(300),  // 5 minutes for news
         )
     }
 
@@ -199,10 +199,13 @@ mod tests {
         assert_eq!(call_count, 1);
 
         // Second call should use cache
-        let result = cache.get_or_fetch(key.clone(), || async {
-            call_count += 1;
-            Ok::<_, String>(value.clone())
-        }).await.unwrap();
+        let result = cache
+            .get_or_fetch(key.clone(), || async {
+                call_count += 1;
+                Ok::<_, String>(value.clone())
+            })
+            .await
+            .unwrap();
         assert_eq!(result, value);
         assert_eq!(call_count, 1); // Should not have incremented
     }

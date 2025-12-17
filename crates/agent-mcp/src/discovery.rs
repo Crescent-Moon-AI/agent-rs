@@ -7,10 +7,10 @@ use agent_tools::ToolRegistry;
 use std::sync::Arc;
 use tracing::{debug, info};
 
+use crate::Result;
 use crate::client::manager::MCPClientManager;
 use crate::config::AgentMCPConfig;
 use crate::tool::MCPTool;
-use crate::Result;
 
 /// Discover and register MCP tools into a ToolRegistry
 ///

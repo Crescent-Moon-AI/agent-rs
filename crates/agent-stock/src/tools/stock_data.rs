@@ -4,7 +4,7 @@ use agent_core::Result as AgentResult;
 use agent_tools::Tool;
 use async_trait::async_trait;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 use crate::api::YahooFinanceClient;
@@ -16,7 +16,7 @@ use crate::error::Result;
 pub struct StockDataTool {
     yahoo_client: YahooFinanceClient,
     cache: StockCache,
-    config: Arc<StockConfig>,
+    _config: Arc<StockConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,7 +34,7 @@ impl StockDataTool {
         Self {
             yahoo_client: YahooFinanceClient::new(),
             cache,
-            config,
+            _config: config,
         }
     }
 
@@ -52,46 +52,54 @@ impl StockDataTool {
         );
 
         // Try to get from cache
-        let result = self.cache.get_or_fetch(cache_key, || async {
-            // Fetch current quote
-            let quote = self.yahoo_client.get_quote(&symbol).await?;
+        let result = self
+            .cache
+            .get_or_fetch(cache_key, || async {
+                // Fetch current quote
+                let quote = self.yahoo_client.get_quote(&symbol).await?;
 
-            let mut result = json!({
-                "symbol": symbol,
-                "current_quote": {
-                    "timestamp": quote.timestamp.to_rfc3339(),
-                    "open": quote.open,
-                    "high": quote.high,
-                    "low": quote.low,
-                    "close": quote.close,
-                    "volume": quote.volume,
-                    "adjusted_close": quote.adjclose,
+                let mut result = json!({
+                    "symbol": symbol,
+                    "current_quote": {
+                        "timestamp": quote.timestamp.to_rfc3339(),
+                        "open": quote.open,
+                        "high": quote.high,
+                        "low": quote.low,
+                        "close": quote.close,
+                        "volume": quote.volume,
+                        "adjusted_close": quote.adjclose,
+                    }
+                });
+
+                // Fetch historical data if requested
+                if include_historical {
+                    let historical = self
+                        .yahoo_client
+                        .get_historical_range(&symbol, &range)
+                        .await?;
+
+                    let historical_data: Vec<_> = historical
+                        .iter()
+                        .map(|q| {
+                            json!({
+                                "timestamp": q.timestamp.to_rfc3339(),
+                                "open": q.open,
+                                "high": q.high,
+                                "low": q.low,
+                                "close": q.close,
+                                "volume": q.volume,
+                                "adjusted_close": q.adjclose,
+                            })
+                        })
+                        .collect();
+
+                    result["historical_data"] = json!(historical_data);
+                    result["data_points"] = json!(historical_data.len());
                 }
-            });
 
-            // Fetch historical data if requested
-            if include_historical {
-                let historical = self.yahoo_client.get_historical_range(&symbol, &range).await?;
-
-                let historical_data: Vec<_> = historical
-                    .iter()
-                    .map(|q| json!({
-                        "timestamp": q.timestamp.to_rfc3339(),
-                        "open": q.open,
-                        "high": q.high,
-                        "low": q.low,
-                        "close": q.close,
-                        "volume": q.volume,
-                        "adjusted_close": q.adjclose,
-                    }))
-                    .collect();
-
-                result["historical_data"] = json!(historical_data);
-                result["data_points"] = json!(historical_data.len());
-            }
-
-            Ok::<_, crate::error::StockError>(result)
-        }).await?;
+                Ok::<_, crate::error::StockError>(result)
+            })
+            .await?;
 
         Ok(result)
     }
@@ -100,8 +108,9 @@ impl StockDataTool {
 #[async_trait]
 impl Tool for StockDataTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
-        let params: StockDataParams = serde_json::from_value(params)
-            .map_err(|e| agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e)))?;
+        let params: StockDataParams = serde_json::from_value(params).map_err(|e| {
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+        })?;
 
         self.fetch_stock_data(params)
             .await

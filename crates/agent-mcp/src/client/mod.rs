@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 
-use crate::error::MCPError;
 use crate::Result;
+use crate::error::MCPError;
 
+pub mod http;
 pub mod manager;
 pub mod stdio;
-pub mod http;
 
 /// MCP client trait - abstracts over different transports
 ///

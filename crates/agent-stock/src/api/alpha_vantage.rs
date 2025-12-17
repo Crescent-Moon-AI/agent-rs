@@ -33,6 +33,49 @@ pub struct TimeSeriesData {
     pub volume: u64,
 }
 
+/// News sentiment article from Alpha Vantage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewsArticle {
+    pub title: String,
+    pub url: String,
+    pub time_published: String,
+    pub authors: Vec<String>,
+    pub summary: String,
+    pub banner_image: Option<String>,
+    pub source: String,
+    pub category_within_source: Option<String>,
+    pub source_domain: String,
+    pub topics: Vec<NewsTopic>,
+    pub overall_sentiment_score: Option<f64>,
+    pub overall_sentiment_label: Option<String>,
+    pub ticker_sentiment: Option<Vec<TickerSentiment>>,
+}
+
+/// News topic from Alpha Vantage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewsTopic {
+    pub topic: String,
+    pub relevance_score: String,
+}
+
+/// Ticker sentiment data from Alpha Vantage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TickerSentiment {
+    pub ticker: String,
+    pub relevance_score: String,
+    pub ticker_sentiment_score: String,
+    pub ticker_sentiment_label: String,
+}
+
+/// News sentiment response from Alpha Vantage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewsSentimentResponse {
+    pub items: String,
+    pub sentiment_score_definition: String,
+    pub relevance_score_definition: String,
+    pub feed: Vec<NewsArticle>,
+}
+
 /// Company overview data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -326,6 +369,58 @@ impl AlphaVantageClient {
         }
 
         Ok(vec![])
+    }
+
+    /// Get news sentiment data for a ticker
+    ///
+    /// # Arguments
+    /// * `tickers` - Comma-separated list of stock tickers (e.g., "AAPL,MSFT")
+    /// * `time_from` - Optional start time (YYYYMMDDTHHMM format)
+    /// * `time_to` - Optional end time (YYYYMMDDTHHMM format)
+    /// * `limit` - Optional limit on number of results (default: 50, max: 1000)
+    pub async fn get_news_sentiment(
+        &self,
+        tickers: &str,
+        time_from: Option<&str>,
+        time_to: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<NewsSentimentResponse> {
+        // Wait for rate limiter
+        self.rate_limiter.until_ready().await;
+
+        let mut params = HashMap::new();
+        params.insert("function".to_string(), "NEWS_SENTIMENT".to_string());
+        params.insert("tickers".to_string(), tickers.to_string());
+        params.insert("apikey".to_string(), self.api_key.clone());
+
+        if let Some(from) = time_from {
+            params.insert("time_from".to_string(), from.to_string());
+        }
+        if let Some(to) = time_to {
+            params.insert("time_to".to_string(), to.to_string());
+        }
+        if let Some(lim) = limit {
+            params.insert("limit".to_string(), lim.to_string());
+        }
+
+        let response = self.client.get(BASE_URL).query(&params).send().await?;
+
+        let data: serde_json::Value = response.json().await?;
+
+        // Check for errors
+        if let Some(error) = data.get("Error Message") {
+            return Err(StockError::AlphaVantageError(error.to_string()));
+        }
+
+        if let Some(_note) = data.get("Note") {
+            return Err(StockError::RateLimitExceeded {
+                provider: "Alpha Vantage".to_string(),
+            });
+        }
+
+        let sentiment_response: NewsSentimentResponse = serde_json::from_value(data)?;
+
+        Ok(sentiment_response)
     }
 }
 

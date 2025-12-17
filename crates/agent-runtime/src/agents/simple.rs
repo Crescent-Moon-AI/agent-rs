@@ -108,11 +108,7 @@ impl Agent for SimpleAgent {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))?;
 
         // Extract text from response
-        Ok(response
-            .message
-            .text()
-            .unwrap_or("No response")
-            .to_string())
+        Ok(response.message.text().unwrap_or("No response").to_string())
     }
 
     fn name(&self) -> &str {

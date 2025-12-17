@@ -5,10 +5,10 @@
 //! - ToolAgent: Agent with LLM loop and tool execution capabilities
 //! - DelegatingAgent: Agent that routes to sub-agents based on custom logic
 
+pub mod delegating;
 pub mod simple;
 pub mod tool;
-pub mod delegating;
 
+pub use delegating::{DelegatingAgent, DelegatingAgentBuilder};
 pub use simple::{SimpleAgent, SimpleConfig};
 pub use tool::ToolAgent;
-pub use delegating::{DelegatingAgent, DelegatingAgentBuilder};

@@ -7,16 +7,14 @@
 //!
 //! Run with: cargo run --example retry_example
 
-use agent_mcp::{MCPConfig, MCPClientManager, RetryPolicy};
+use agent_mcp::{MCPClientManager, MCPConfig, RetryPolicy};
 use std::sync::Arc;
 use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging to see retry attempts
-    tracing_subscriber::fmt()
-        .with_env_filter("debug")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("debug").init();
 
     println!("=== Agent MCP Retry Logic Example ===\n");
 
@@ -25,10 +23,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Fast retry policy (for testing or low-latency scenarios)
     let fast_policy = RetryPolicy::new(
-        3,                              // 3 attempts
-        Duration::from_millis(10),      // 10ms initial backoff
-        Duration::from_millis(100),     // 100ms max backoff
-        2.0,                            // exponential multiplier
+        3,                          // 3 attempts
+        Duration::from_millis(10),  // 10ms initial backoff
+        Duration::from_millis(100), // 100ms max backoff
+        2.0,                        // exponential multiplier
     );
     println!("   Fast policy: 3 attempts, 10-100ms backoff");
 
@@ -38,10 +36,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Aggressive retry policy (for unreliable networks)
     let aggressive_policy = RetryPolicy::new(
-        5,                              // 5 attempts
-        Duration::from_millis(200),     // 200ms initial backoff
-        Duration::from_secs(30),        // 30s max backoff
-        2.0,                            // exponential multiplier
+        5,                          // 5 attempts
+        Duration::from_millis(200), // 200ms initial backoff
+        Duration::from_secs(30),    // 30s max backoff
+        2.0,                        // exponential multiplier
     );
     println!("   Aggressive policy: 5 attempts, 200ms-30s backoff\n");
 

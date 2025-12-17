@@ -1,8 +1,8 @@
 //! Tool agent implementation (wraps AgentExecutor)
 
+use crate::executor::AgentExecutor;
 use agent_core::{Agent, Context, Result};
 use async_trait::async_trait;
-use crate::executor::AgentExecutor;
 
 /// An agent that uses the LLM loop with tool execution
 ///
@@ -87,8 +87,8 @@ impl Agent for ToolAgent {
 mod tests {
     use super::*;
     use crate::executor::{AgentExecutorBuilder, ExecutorConfig};
-    use std::sync::Arc;
     use agent_tools::ToolRegistry;
+    use std::sync::Arc;
 
     #[test]
     fn test_tool_agent_name() {

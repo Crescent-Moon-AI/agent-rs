@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use serde_json::Value;
 use std::sync::Arc;
 
-use crate::client::manager::{MCPClientManager, MCPToolInfo};
 use crate::client::MCPContent;
+use crate::client::manager::{MCPClientManager, MCPToolInfo};
 
 /// Wrapper that implements agent-tools::Tool for MCP tools
 ///

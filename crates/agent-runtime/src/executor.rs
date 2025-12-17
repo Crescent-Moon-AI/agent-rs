@@ -139,11 +139,7 @@ impl AgentExecutor {
                 StopReason::EndTurn => {
                     // Natural completion, extract text and return
                     debug!("Agent completed naturally");
-                    let text = response
-                        .message
-                        .text()
-                        .unwrap_or("No response")
-                        .to_string();
+                    let text = response.message.text().unwrap_or("No response").to_string();
                     return Ok(text);
                 }
 
@@ -173,11 +169,7 @@ impl AgentExecutor {
 
                 StopReason::StopSequence => {
                     debug!("Stop sequence encountered");
-                    let text = response
-                        .message
-                        .text()
-                        .unwrap_or("No response")
-                        .to_string();
+                    let text = response.message.text().unwrap_or("No response").to_string();
                     return Ok(text);
                 }
             }
@@ -189,9 +181,7 @@ impl AgentExecutor {
         self.tool_registry
             .list_tools()
             .iter()
-            .map(|tool| {
-                ToolDefinition::new(tool.name(), tool.description(), tool.input_schema())
-            })
+            .map(|tool| ToolDefinition::new(tool.name(), tool.description(), tool.input_schema()))
             .collect()
     }
 
@@ -217,8 +207,8 @@ impl AgentExecutor {
                     Ok(result) => {
                         debug!("Tool {} succeeded", name);
                         // Convert result to string
-                        let result_str = serde_json::to_string(&result)
-                            .unwrap_or_else(|_| result.to_string());
+                        let result_str =
+                            serde_json::to_string(&result).unwrap_or_else(|_| result.to_string());
 
                         results.push(Message::tool_result(id.clone(), result_str));
                     }
@@ -306,7 +296,11 @@ impl AgentExecutorBuilder {
             agent_core::Error::InitializationFailed("Provider not set".to_string())
         })?;
 
-        Ok(AgentExecutor::new(provider, self.tool_registry, self.config))
+        Ok(AgentExecutor::new(
+            provider,
+            self.tool_registry,
+            self.config,
+        ))
     }
 }
 
@@ -329,7 +323,10 @@ mod tests {
 
         assert_eq!(builder.config.model, "test-model");
         assert_eq!(builder.config.max_iterations, 5);
-        assert_eq!(builder.config.system_prompt, Some("Test prompt".to_string()));
+        assert_eq!(
+            builder.config.system_prompt,
+            Some("Test prompt".to_string())
+        );
     }
 
     #[test]

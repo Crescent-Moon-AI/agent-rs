@@ -4,7 +4,6 @@ use super::*;
 use crate::config::{MCPConfig, MCPServerConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
@@ -74,7 +73,10 @@ impl MCPClientManager {
                 MCPError::ConfigError(format!("MCP server not found: {}", server_name))
             })?;
 
-            match self.create_and_connect_client(server_config, server_name).await {
+            match self
+                .create_and_connect_client(server_config, server_name)
+                .await
+            {
                 Ok(client) => {
                     info!("Successfully connected to MCP server: {}", server_name);
                     clients.insert(server_name.clone(), client);
@@ -120,9 +122,7 @@ impl MCPClientManager {
 
         // Create the client based on transport type and wrap in Arc
         let client: ArcMCPClient = match config {
-            MCPServerConfig::Stdio { .. } => {
-                Arc::new(StdioMCPClient::from_config(config)?)
-            }
+            MCPServerConfig::Stdio { .. } => Arc::new(StdioMCPClient::from_config(config)?),
             MCPServerConfig::Http { .. } | MCPServerConfig::Sse { .. } => {
                 Arc::new(HttpMCPClient::from_config(config)?)
             }
@@ -140,21 +140,6 @@ impl MCPClientManager {
         }
 
         Ok(client)
-    }
-
-    /// Create a client for the given configuration
-    fn create_client(&self, config: &MCPServerConfig) -> Result<ArcMCPClient> {
-        use super::http::HttpMCPClient;
-        use super::stdio::StdioMCPClient;
-
-        match config {
-            MCPServerConfig::Stdio { .. } => {
-                Ok(Arc::new(StdioMCPClient::from_config(config)?))
-            }
-            MCPServerConfig::Http { .. } | MCPServerConfig::Sse { .. } => {
-                Ok(Arc::new(HttpMCPClient::from_config(config)?))
-            }
-        }
     }
 
     /// Discover all tools from all connected servers
@@ -189,9 +174,8 @@ impl MCPClientManager {
         // Filter tools based on agent configuration
         let agent_config = self.config.get_agent_config(&self.agent_name);
         if let Some(config) = agent_config {
-            all_tools.retain(|tool| {
-                crate::config::should_include_tool(&tool.definition.name, config)
-            });
+            all_tools
+                .retain(|tool| crate::config::should_include_tool(&tool.definition.name, config));
         }
 
         Ok(all_tools)
@@ -276,11 +260,7 @@ impl MCPClientManager {
     ///
     /// * `server_name` - Name of the MCP server
     /// * `uri` - URI of the resource to read
-    pub async fn read_resource(
-        &self,
-        server_name: &str,
-        uri: &str,
-    ) -> Result<Vec<MCPContent>> {
+    pub async fn read_resource(&self, server_name: &str, uri: &str) -> Result<Vec<MCPContent>> {
         let clients = self.clients.read().await;
         let client = clients
             .get(server_name)
@@ -339,7 +319,9 @@ impl MCPClientManager {
         info!("Reconnecting to MCP server: {}", server_name);
 
         // Create and connect new client
-        let client = self.create_and_connect_client(server_config, server_name).await?;
+        let client = self
+            .create_and_connect_client(server_config, server_name)
+            .await?;
 
         // Replace the old client
         let mut clients = self.clients.write().await;

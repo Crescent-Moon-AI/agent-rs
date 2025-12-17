@@ -2,7 +2,7 @@
 //!
 //! Utilities for converting between MCP JSON schemas and agent-rs formats.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Create a JSON Schema object type
 ///
@@ -247,8 +247,14 @@ mod tests {
         assert!(!validate_basic(&json!(1), &boolean(None)));
 
         // Array validation
-        assert!(validate_basic(&json!([1, 2, 3]), &array(number(None), None)));
-        assert!(!validate_basic(&json!({"key": "value"}), &array(number(None), None)));
+        assert!(validate_basic(
+            &json!([1, 2, 3]),
+            &array(number(None), None)
+        ));
+        assert!(!validate_basic(
+            &json!({"key": "value"}),
+            &array(number(None), None)
+        ));
 
         // Object validation
         let obj_schema = object(json!({"name": string(None)}), vec![]);
@@ -278,6 +284,11 @@ mod tests {
         assert_eq!(schema["type"], "object");
         assert!(schema["properties"]["user"].is_object());
         assert!(schema["properties"]["tags"].is_object());
-        assert!(schema["required"].as_array().unwrap().contains(&json!("user")));
+        assert!(
+            schema["required"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("user"))
+        );
     }
 }

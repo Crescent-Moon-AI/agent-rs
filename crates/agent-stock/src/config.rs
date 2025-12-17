@@ -14,6 +14,28 @@ pub enum DataProvider {
     AlphaVantage,
 }
 
+/// News provider for market news and sentiment
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum NewsProvider {
+    /// Mock data for testing
+    #[default]
+    Mock,
+    /// Finnhub.io (60 requests/minute free tier)
+    Finnhub,
+    /// Alpha Vantage News & Sentiment API
+    AlphaVantage,
+}
+
+/// Language for agent responses
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ResponseLanguage {
+    /// Chinese (default)
+    #[default]
+    Chinese,
+    /// English
+    English,
+}
+
 /// Configuration for stock analysis operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StockConfig {
@@ -44,6 +66,12 @@ pub struct StockConfig {
     /// Alpha Vantage API rate limit (requests per minute)
     pub alpha_vantage_rate_limit: u32,
 
+    /// News data provider
+    pub news_provider: NewsProvider,
+
+    /// Finnhub.io API key (optional)
+    pub finnhub_api_key: Option<String>,
+
     /// LLM model for analysis
     pub model: String,
 
@@ -52,6 +80,9 @@ pub struct StockConfig {
 
     /// Maximum tokens per response
     pub max_tokens: usize,
+
+    /// Language for agent responses
+    pub response_language: ResponseLanguage,
 }
 
 impl Default for StockConfig {
@@ -66,9 +97,12 @@ impl Default for StockConfig {
             request_timeout: Duration::from_secs(30),
             alpha_vantage_api_key: None,
             alpha_vantage_rate_limit: 5, // Free tier: 5 requests/minute
+            news_provider: NewsProvider::Mock,
+            finnhub_api_key: None,
             model: "claude-opus-4-5-20251101".to_string(),
             temperature: 0.5,
             max_tokens: 4096,
+            response_language: ResponseLanguage::Chinese,
         }
     }
 }
@@ -94,6 +128,19 @@ impl StockConfig {
         {
             return Err(StockError::ConfigError(
                 "Alpha Vantage API key required when using AlphaVantage provider".to_string(),
+            ));
+        }
+
+        if self.news_provider == NewsProvider::Finnhub && self.finnhub_api_key.is_none() {
+            return Err(StockError::ConfigError(
+                "Finnhub API key required when using Finnhub provider. Set FINNHUB_API_KEY environment variable.".to_string(),
+            ));
+        }
+
+        if self.news_provider == NewsProvider::AlphaVantage && self.alpha_vantage_api_key.is_none()
+        {
+            return Err(StockError::ConfigError(
+                "Alpha Vantage API key required when using AlphaVantage news provider".to_string(),
             ));
         }
 
@@ -124,9 +171,12 @@ pub struct StockConfigBuilder {
     request_timeout: Option<Duration>,
     alpha_vantage_api_key: Option<String>,
     alpha_vantage_rate_limit: Option<u32>,
+    news_provider: Option<NewsProvider>,
+    finnhub_api_key: Option<String>,
     model: Option<String>,
     temperature: Option<f32>,
     max_tokens: Option<usize>,
+    response_language: Option<ResponseLanguage>,
 }
 
 impl StockConfigBuilder {
@@ -192,6 +242,39 @@ impl StockConfigBuilder {
         self
     }
 
+    /// Set news provider
+    pub fn news_provider(mut self, provider: NewsProvider) -> Self {
+        self.news_provider = Some(provider);
+        self
+    }
+
+    /// Set Finnhub API key
+    pub fn finnhub_api_key(mut self, key: impl Into<String>) -> Self {
+        self.finnhub_api_key = Some(key.into());
+        self
+    }
+
+    /// Load Finnhub API key from environment
+    pub fn with_env_finnhub_key(mut self) -> Self {
+        if let Ok(key) = std::env::var("FINNHUB_API_KEY") {
+            self.finnhub_api_key = Some(key);
+        }
+        self
+    }
+
+    /// Load news provider from environment (NEWS_PROVIDER=Mock|Finnhub|AlphaVantage)
+    pub fn with_env_news_provider(mut self) -> Self {
+        if let Ok(provider) = std::env::var("NEWS_PROVIDER") {
+            self.news_provider = match provider.to_lowercase().as_str() {
+                "finnhub" => Some(NewsProvider::Finnhub),
+                "alphavantage" | "alpha_vantage" => Some(NewsProvider::AlphaVantage),
+                "mock" => Some(NewsProvider::Mock),
+                _ => None,
+            };
+        }
+        self
+    }
+
     /// Set the LLM model
     pub fn model(mut self, model: impl Into<String>) -> Self {
         self.model = Some(model.into());
@@ -210,6 +293,12 @@ impl StockConfigBuilder {
         self
     }
 
+    /// Set the response language
+    pub fn response_language(mut self, language: ResponseLanguage) -> Self {
+        self.response_language = Some(language);
+        self
+    }
+
     /// Load model configuration from environment variables
     pub fn from_env_model(mut self) -> Self {
         if let Ok(model) = std::env::var("STOCK_MODEL") {
@@ -224,6 +313,13 @@ impl StockConfigBuilder {
             if let Ok(token_val) = tokens.parse() {
                 self.max_tokens = Some(token_val);
             }
+        }
+        if let Ok(lang) = std::env::var("STOCK_RESPONSE_LANGUAGE") {
+            self.response_language = match lang.to_lowercase().as_str() {
+                "chinese" | "zh" | "中文" => Some(ResponseLanguage::Chinese),
+                "english" | "en" => Some(ResponseLanguage::English),
+                _ => None,
+            };
         }
         self
     }
@@ -250,9 +346,12 @@ impl StockConfigBuilder {
             alpha_vantage_rate_limit: self
                 .alpha_vantage_rate_limit
                 .unwrap_or(defaults.alpha_vantage_rate_limit),
+            news_provider: self.news_provider.unwrap_or(defaults.news_provider),
+            finnhub_api_key: self.finnhub_api_key,
             model: self.model.unwrap_or(defaults.model),
             temperature: self.temperature.unwrap_or(defaults.temperature),
             max_tokens: self.max_tokens.unwrap_or(defaults.max_tokens),
+            response_language: self.response_language.unwrap_or(defaults.response_language),
         };
 
         config.validate()?;

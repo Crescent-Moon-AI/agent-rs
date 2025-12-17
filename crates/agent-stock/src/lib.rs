@@ -51,5 +51,5 @@ pub mod tools;
 
 // Re-export main types for convenience
 pub use agents::stock_analysis::StockAnalysisAgent;
-pub use config::StockConfig;
+pub use config::{ResponseLanguage, StockConfig};
 pub use error::{Result, StockError};

@@ -13,9 +13,7 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_env_filter("info")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("info").init();
 
     println!("=== Agent MCP Resource Management Example ===\n");
 
@@ -72,7 +70,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Deny sensitive files
     let filter_safe = ResourceFilter::new(
         vec!["file://**".to_string()],
-        vec!["file://**/.env".to_string(), "file://**/secrets/**".to_string()],
+        vec![
+            "file://**/.env".to_string(),
+            "file://**/secrets/**".to_string(),
+        ],
     );
     println!("   Safe filter created\n");
 
@@ -87,7 +88,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for uri in test_uris {
         let allowed = filter_safe.should_include(uri);
         let icon = if allowed { "✓" } else { "✗" };
-        println!("   {} {}: {}", icon, uri, if allowed { "allowed" } else { "denied" });
+        println!(
+            "   {} {}: {}",
+            icon,
+            uri,
+            if allowed { "allowed" } else { "denied" }
+        );
     }
     println!();
 
@@ -98,7 +104,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let uri = "file://example.txt";
     match context.load_resource(uri).await {
         Ok(resource) => {
-            println!("   ✓ Loaded: {} ({} bytes)", resource.uri, resource.content.len());
+            println!(
+                "   ✓ Loaded: {} ({} bytes)",
+                resource.uri,
+                resource.content.len()
+            );
             println!("     MIME type: {:?}", resource.mime_type);
         }
         Err(e) => println!("   ⚠ Failed to load: {}", e),

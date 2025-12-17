@@ -82,21 +82,46 @@ export ANTHROPIC_API_KEY=your_anthropic_key
 
 # Optional (for fundamental data)
 export ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
+
+# Optional (configure response language, default is Chinese)
+export STOCK_RESPONSE_LANGUAGE=chinese  # or: english, zh, en
 ```
 
 ### Configuration Builder
 
 ```rust
-use agent_stock::StockConfig;
+use agent_stock::{ResponseLanguage, StockConfig};
 use std::time::Duration;
 
 let config = StockConfig::builder()
     .cache_ttl_realtime(Duration::from_secs(60))
     .cache_ttl_fundamental(Duration::from_secs(3600))
     .max_retries(3)
+    .response_language(ResponseLanguage::Chinese)  // Chinese (default) or English
     .with_env_api_key()
+    .from_env_model()  // Load language settings from environment
     .build()?;
 ```
+
+### Language Configuration
+
+The agent can respond in Chinese (default) or English. Configure it via:
+
+**Method 1: Environment Variable**
+```bash
+export STOCK_RESPONSE_LANGUAGE=chinese  # or: english, zh, en
+```
+
+**Method 2: Code Configuration**
+```rust
+use agent_stock::ResponseLanguage;
+
+let config = StockConfig::builder()
+    .response_language(ResponseLanguage::Chinese)  // or ResponseLanguage::English
+    .build()?;
+```
+
+All agents (DataFetcher, TechnicalAnalyzer, FundamentalAnalyzer, NewsAnalyzer) will use the configured language for their responses.
 
 ## Architecture
 

@@ -144,16 +144,9 @@ impl AgentRuntime {
     /// # Returns
     ///
     /// A new ToolAgent instance
-    pub fn create_tool_agent(
-        &self,
-        config: ExecutorConfig,
-        name: impl Into<String>,
-    ) -> ToolAgent {
-        let executor = AgentExecutor::new(
-            self.provider.clone(),
-            self.tool_registry.clone(),
-            config,
-        );
+    pub fn create_tool_agent(&self, config: ExecutorConfig, name: impl Into<String>) -> ToolAgent {
+        let executor =
+            AgentExecutor::new(self.provider.clone(), self.tool_registry.clone(), config);
         ToolAgent::new(executor, name.into())
     }
 
@@ -201,7 +194,10 @@ impl AgentRuntime {
         let agent_config = agent_config.unwrap();
 
         // Create MCP client manager for this agent
-        let manager = Arc::new(MCPClientManager::new(mcp_config.clone(), agent_name.clone()));
+        let manager = Arc::new(MCPClientManager::new(
+            mcp_config.clone(),
+            agent_name.clone(),
+        ));
 
         // Initialize MCP connections
         match manager.initialize().await {

@@ -1,10 +1,13 @@
 //! Delegating agent implementation (routes to sub-agents)
 
+use crate::runtime::AgentRuntime;
 use agent_core::{Agent, Context, Error, Result};
 use async_trait::async_trait;
-use crate::runtime::AgentRuntime;
 use std::collections::HashMap;
 use std::sync::Arc;
+
+/// Router function type for delegating agents
+type RouterFn = Box<dyn Fn(&str, &Context) -> String + Send + Sync>;
 
 /// An agent that delegates to sub-agents based on routing logic
 ///
@@ -47,7 +50,7 @@ pub struct DelegatingAgent {
     #[allow(dead_code)]
     runtime: Arc<AgentRuntime>,
     sub_agents: HashMap<String, Arc<dyn Agent>>,
-    router: Box<dyn Fn(&str, &Context) -> String + Send + Sync>,
+    router: RouterFn,
     name: String,
 }
 
@@ -80,16 +83,13 @@ impl Agent for DelegatingAgent {
         let agent_name = (self.router)(&input, context);
 
         // Get the selected agent
-        let agent = self
-            .sub_agents
-            .get(&agent_name)
-            .ok_or_else(|| {
-                Error::ProcessingFailed(format!(
-                    "Agent '{}' not found. Available agents: {:?}",
-                    agent_name,
-                    self.agent_names()
-                ))
-            })?;
+        let agent = self.sub_agents.get(&agent_name).ok_or_else(|| {
+            Error::ProcessingFailed(format!(
+                "Agent '{}' not found. Available agents: {:?}",
+                agent_name,
+                self.agent_names()
+            ))
+        })?;
 
         // Delegate to the selected agent
         agent.process(input, context).await
@@ -104,7 +104,7 @@ impl Agent for DelegatingAgent {
 pub struct DelegatingAgentBuilder {
     runtime: Arc<AgentRuntime>,
     sub_agents: HashMap<String, Arc<dyn Agent>>,
-    router: Option<Box<dyn Fn(&str, &Context) -> String + Send + Sync>>,
+    router: Option<RouterFn>,
     name: String,
 }
 
@@ -154,9 +154,9 @@ impl DelegatingAgentBuilder {
     /// - No router function is set
     /// - No sub-agents are added
     pub fn build(self) -> Result<DelegatingAgent> {
-        let router = self.router.ok_or_else(|| {
-            Error::InitializationFailed("Router function not set".to_string())
-        })?;
+        let router = self
+            .router
+            .ok_or_else(|| Error::InitializationFailed("Router function not set".to_string()))?;
 
         if self.sub_agents.is_empty() {
             return Err(Error::InitializationFailed(

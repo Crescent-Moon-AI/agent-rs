@@ -51,9 +51,14 @@ impl Context {
     ///
     /// ctx.insert_typed("stock", &data).unwrap();
     /// ```
-    pub fn insert_typed<T: Serialize>(&mut self, key: impl Into<String>, value: &T) -> crate::Result<()> {
-        let json_value = serde_json::to_value(value)
-            .map_err(|e| crate::Error::ProcessingFailed(format!("Failed to serialize context value: {}", e)))?;
+    pub fn insert_typed<T: Serialize>(
+        &mut self,
+        key: impl Into<String>,
+        value: &T,
+    ) -> crate::Result<()> {
+        let json_value = serde_json::to_value(value).map_err(|e| {
+            crate::Error::ProcessingFailed(format!("Failed to serialize context value: {}", e))
+        })?;
         self.data.insert(key.into(), json_value);
         Ok(())
     }
@@ -89,8 +94,12 @@ impl Context {
         match self.data.get(key) {
             None => Ok(None),
             Some(value) => {
-                let typed = serde_json::from_value(value.clone())
-                    .map_err(|e| crate::Error::ProcessingFailed(format!("Failed to deserialize context value: {}", e)))?;
+                let typed = serde_json::from_value(value.clone()).map_err(|e| {
+                    crate::Error::ProcessingFailed(format!(
+                        "Failed to deserialize context value: {}",
+                        e
+                    ))
+                })?;
                 Ok(Some(typed))
             }
         }
@@ -179,4 +188,3 @@ mod tests {
         assert!(ctx.is_empty());
     }
 }
-

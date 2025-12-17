@@ -6,10 +6,10 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 use crate::cache::CacheManager;
-use crate::config::StockConfig;
+use crate::config::{ResponseLanguage, StockConfig};
 use crate::tools::{ChartDataTool, StockDataTool, TechnicalIndicatorTool};
 
-const SYSTEM_PROMPT: &str = r#"You are a technical analysis expert specializing in stock market analysis.
+const SYSTEM_PROMPT_EN: &str = r#"You are a technical analysis expert specializing in stock market analysis.
 
 Your expertise includes:
 - Technical indicators (RSI, MACD, Moving Averages, Bollinger Bands, etc.)
@@ -26,6 +26,29 @@ When analyzing a stock technically:
 
 Be specific with indicator values and thresholds. Explain your analysis clearly.
 Always acknowledge that technical analysis is probabilistic, not deterministic.
+"#;
+
+const SYSTEM_PROMPT_ZH: &str = r#"你是一位专业的技术分析专家,专注于股票市场分析。
+
+**重要:你必须使用中文回复所有内容。**
+
+你的专业领域包括:
+- 技术指标(RSI、MACD、移动平均线、布林带等)
+- 图表形态和趋势分析
+- 支撑位和阻力位
+- 成交量分析和动量指标
+
+在进行股票技术分析时:
+1. 计算相关的技术指标
+2. 在具体情境中解读指标(超买/超卖、看涨/看跌)
+3. 寻找多个指标之间的背离和确认信号
+4. 提供清晰的买入/卖出/持有信号及其理由
+5. 在相关时考虑多个时间周期
+
+请具体说明指标数值和阈值。清晰地解释你的分析。
+始终承认技术分析是概率性的,而非确定性的。
+
+**记住:请用中文撰写你的所有分析和回复。**
 "#;
 
 /// Agent specialized in technical analysis
@@ -61,9 +84,14 @@ impl TechnicalAnalyzerAgent {
         runtime.tools().register(technical_tool);
         runtime.tools().register(chart_tool);
 
+        let system_prompt = match config.response_language {
+            ResponseLanguage::Chinese => SYSTEM_PROMPT_ZH,
+            ResponseLanguage::English => SYSTEM_PROMPT_EN,
+        };
+
         let executor_config = ExecutorConfig {
             model: config.model.clone(),
-            system_prompt: Some(SYSTEM_PROMPT.to_string()),
+            system_prompt: Some(system_prompt.to_string()),
             max_tokens: config.max_tokens,
             temperature: Some(config.temperature),
             max_iterations: 10, // More iterations for comprehensive analysis

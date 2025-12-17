@@ -4,7 +4,7 @@ use agent_core::Result as AgentResult;
 use agent_tools::Tool;
 use async_trait::async_trait;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 use crate::api::YahooFinanceClient;
@@ -16,7 +16,7 @@ use crate::error::Result;
 pub struct ChartDataTool {
     yahoo_client: YahooFinanceClient,
     cache: StockCache,
-    config: Arc<StockConfig>,
+    _config: Arc<StockConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,7 +38,7 @@ impl ChartDataTool {
         Self {
             yahoo_client: YahooFinanceClient::new(),
             cache,
-            config,
+            _config: config,
         }
     }
 
@@ -50,7 +50,7 @@ impl ChartDataTool {
         let cache_key = CacheKey::new(
             &symbol,
             "chart",
-            json!({"range": &params.range, "indicators": &params.indicators})
+            json!({"range": &params.range, "indicators": &params.indicators}),
         );
 
         // Try to get from cache
@@ -135,8 +135,9 @@ impl ChartDataTool {
 #[async_trait]
 impl Tool for ChartDataTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
-        let params: ChartParams = serde_json::from_value(params)
-            .map_err(|e| agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e)))?;
+        let params: ChartParams = serde_json::from_value(params).map_err(|e| {
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+        })?;
 
         self.prepare_chart_data(params)
             .await

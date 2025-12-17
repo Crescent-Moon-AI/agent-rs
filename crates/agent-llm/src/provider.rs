@@ -1,7 +1,7 @@
 //! LLM provider trait definition
 
-use async_trait::async_trait;
 use crate::{CompletionRequest, CompletionResponse, Result};
+use async_trait::async_trait;
 
 /// Trait for LLM providers
 ///

@@ -123,30 +123,36 @@ impl StdioMCPClient {
         debug!("Sending request: {}", method);
 
         let mut stdin = self.stdin.lock().await;
-        let stdin = stdin
-            .as_mut()
-            .ok_or(MCPError::NotConnected)?;
+        let stdin = stdin.as_mut().ok_or(MCPError::NotConnected)?;
 
         let request_str = serde_json::to_string(&request)?;
-        stdin.write_all(request_str.as_bytes()).await
+        stdin
+            .write_all(request_str.as_bytes())
+            .await
             .map_err(|e| MCPError::ConnectionFailed(e.to_string()))?;
-        stdin.write_all(b"\n").await
+        stdin
+            .write_all(b"\n")
+            .await
             .map_err(|e| MCPError::ConnectionFailed(e.to_string()))?;
-        stdin.flush().await
+        stdin
+            .flush()
+            .await
             .map_err(|e| MCPError::ConnectionFailed(e.to_string()))?;
 
         // Read response
         let mut stdout = self.stdout.lock().await;
-        let stdout = stdout
-            .as_mut()
-            .ok_or(MCPError::NotConnected)?;
+        let stdout = stdout.as_mut().ok_or(MCPError::NotConnected)?;
 
         let mut line = String::new();
-        stdout.read_line(&mut line).await
+        stdout
+            .read_line(&mut line)
+            .await
             .map_err(|e| MCPError::ConnectionFailed(e.to_string()))?;
 
         if line.is_empty() {
-            return Err(MCPError::ConnectionFailed("Server closed connection".to_string()));
+            return Err(MCPError::ConnectionFailed(
+                "Server closed connection".to_string(),
+            ));
         }
 
         let response: Value = serde_json::from_str(&line)?;
@@ -159,7 +165,8 @@ impl StdioMCPClient {
         }
 
         // Return result
-        response.get("result")
+        response
+            .get("result")
             .cloned()
             .ok_or_else(|| MCPError::RequestFailed("No result in response".to_string()))
     }
@@ -182,9 +189,8 @@ impl StdioMCPClient {
         let result = self.send_request("initialize", params).await?;
 
         // Parse server info
-        let capabilities: MCPServerCapabilities = serde_json::from_value(
-            result["capabilities"].clone()
-        ).unwrap_or_default();
+        let capabilities: MCPServerCapabilities =
+            serde_json::from_value(result["capabilities"].clone()).unwrap_or_default();
 
         let server_info = MCPServerInfo {
             name: result["serverInfo"]["name"]
@@ -202,7 +208,10 @@ impl StdioMCPClient {
             capabilities,
         };
 
-        info!("Connected to MCP server: {} v{}", server_info.name, server_info.version);
+        info!(
+            "Connected to MCP server: {} v{}",
+            server_info.name, server_info.version
+        );
 
         // Send initialized notification
         let notification = serde_json::json!({
@@ -244,13 +253,18 @@ impl MCPClient for StdioMCPClient {
             command.current_dir(cwd);
         }
 
-        let mut child = command.spawn()
+        let mut child = command
+            .spawn()
             .map_err(|e| MCPError::ConnectionFailed(format!("Failed to spawn process: {}", e)))?;
 
         // Get stdin/stdout
-        let stdin = child.stdin.take()
+        let stdin = child
+            .stdin
+            .take()
             .ok_or_else(|| MCPError::ConnectionFailed("Failed to get stdin".to_string()))?;
-        let stdout = child.stdout.take()
+        let stdout = child
+            .stdout
+            .take()
             .ok_or_else(|| MCPError::ConnectionFailed("Failed to get stdout".to_string()))?;
 
         // Store handles
@@ -268,7 +282,8 @@ impl MCPClient for StdioMCPClient {
 
     fn is_connected(&self) -> bool {
         // Non-blocking check using try_lock
-        self.connected.try_lock()
+        self.connected
+            .try_lock()
             .map(|guard| *guard)
             .unwrap_or(false)
     }
@@ -297,7 +312,9 @@ impl MCPClient for StdioMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("tools/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("tools/list", serde_json::json!({}))
+            .await?;
 
         let tools: Vec<MCPToolDefinition> = serde_json::from_value(result["tools"].clone())
             .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {}", e)))?;
@@ -328,10 +345,14 @@ impl MCPClient for StdioMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("resources/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("resources/list", serde_json::json!({}))
+            .await?;
 
-        let resources: Vec<MCPResourceDefinition> = serde_json::from_value(result["resources"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resources: {}", e)))?;
+        let resources: Vec<MCPResourceDefinition> =
+            serde_json::from_value(result["resources"].clone()).map_err(|e| {
+                MCPError::RequestFailed(format!("Failed to parse resources: {}", e))
+            })?;
 
         Ok(resources)
     }
@@ -358,19 +379,18 @@ impl MCPClient for StdioMCPClient {
             return Err(MCPError::NotConnected);
         }
 
-        let result = self.send_request("prompts/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("prompts/list", serde_json::json!({}))
+            .await?;
 
-        let prompts: Vec<MCPPromptDefinition> = serde_json::from_value(result["prompts"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
+        let prompts: Vec<MCPPromptDefinition> =
+            serde_json::from_value(result["prompts"].clone())
+                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
 
         Ok(prompts)
     }
 
-    async fn get_prompt(
-        &self,
-        name: &str,
-        arguments: Option<Value>,
-    ) -> Result<MCPPromptResult> {
+    async fn get_prompt(&self, name: &str, arguments: Option<Value>) -> Result<MCPPromptResult> {
         if !self.is_connected() {
             return Err(MCPError::NotConnected);
         }

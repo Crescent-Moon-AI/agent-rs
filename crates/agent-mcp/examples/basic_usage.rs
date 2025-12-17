@@ -15,9 +15,7 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
-    tracing_subscriber::fmt()
-        .with_env_filter("info")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("info").init();
 
     println!("=== Agent MCP Basic Usage Example ===\n");
 
@@ -49,14 +47,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let connected = manager.connected_servers().await;
-    println!("   ✓ Connected to {} server(s): {:?}\n", connected.len(), connected);
+    println!(
+        "   ✓ Connected to {} server(s): {:?}\n",
+        connected.len(),
+        connected
+    );
 
     // 5. Health check
     println!("5. Performing health check...");
     let health = manager.health_check().await;
     for (server, status) in &health {
         let icon = if *status { "✓" } else { "✗" };
-        println!("   {} {}: {}", icon, server, if *status { "healthy" } else { "unhealthy" });
+        println!(
+            "   {} {}: {}",
+            icon,
+            server,
+            if *status { "healthy" } else { "unhealthy" }
+        );
     }
     println!();
 
@@ -66,7 +73,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(tools) => {
             println!("   ✓ Found {} tool(s):", tools.len());
             for tool in tools.iter().take(5) {
-                println!("     - {} (from {})", tool.definition.name, tool.server_name);
+                println!(
+                    "     - {} (from {})",
+                    tool.definition.name, tool.server_name
+                );
                 if let Some(desc) = &tool.definition.description {
                     println!("       {}", desc);
                 }

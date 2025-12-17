@@ -4,9 +4,15 @@ use agent_core::Result as AgentResult;
 use agent_tools::Tool;
 use async_trait::async_trait;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
-use ta::{Next, indicators::{SimpleMovingAverage, ExponentialMovingAverage, RelativeStrengthIndex, BollingerBands, AverageTrueRange}};
+use ta::{
+    Next,
+    indicators::{
+        AverageTrueRange, BollingerBands, ExponentialMovingAverage, RelativeStrengthIndex,
+        SimpleMovingAverage,
+    },
+};
 
 use crate::api::YahooFinanceClient;
 use crate::cache::StockCache;
@@ -16,8 +22,8 @@ use crate::error::{Result, StockError};
 /// Tool for calculating technical indicators
 pub struct TechnicalIndicatorTool {
     yahoo_client: YahooFinanceClient,
-    cache: StockCache,
-    config: Arc<StockConfig>,
+    _cache: StockCache,
+    _config: Arc<StockConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,8 +45,8 @@ impl TechnicalIndicatorTool {
     pub fn new(config: Arc<StockConfig>, cache: StockCache) -> Self {
         Self {
             yahoo_client: YahooFinanceClient::new(),
-            cache,
-            config,
+            _cache: cache,
+            _config: config,
         }
     }
 
@@ -50,7 +56,10 @@ impl TechnicalIndicatorTool {
         let range = params.range.unwrap_or_else(|| "3mo".to_string());
 
         // Fetch historical data
-        let quotes = self.yahoo_client.get_historical_range(&symbol, &range).await?;
+        let quotes = self
+            .yahoo_client
+            .get_historical_range(&symbol, &range)
+            .await?;
 
         if quotes.is_empty() {
             return Err(StockError::DataUnavailable {
@@ -68,7 +77,8 @@ impl TechnicalIndicatorTool {
         // Calculate indicator based on type
         let result = match params.indicator.to_uppercase().as_str() {
             "RSI" => {
-                let mut rsi = RelativeStrengthIndex::new(params.period).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut rsi = RelativeStrengthIndex::new(params.period)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
                 let mut rsi_values = Vec::new();
                 for &close in &closes {
                     rsi_values.push(rsi.next(close));
@@ -82,9 +92,10 @@ impl TechnicalIndicatorTool {
                     "interpretation": interpret_rsi(current_rsi),
                     "recent_values": &rsi_values[rsi_values.len().saturating_sub(10)..],
                 })
-            },
+            }
             "SMA" => {
-                let mut sma = SimpleMovingAverage::new(params.period).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut sma = SimpleMovingAverage::new(params.period)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
                 let mut sma_values = Vec::new();
                 for &close in &closes {
                     sma_values.push(sma.next(close));
@@ -100,9 +111,10 @@ impl TechnicalIndicatorTool {
                     "price_vs_sma": if current_price > current_sma { "above" } else { "below" },
                     "recent_values": &sma_values[sma_values.len().saturating_sub(10)..],
                 })
-            },
+            }
             "EMA" => {
-                let mut ema = ExponentialMovingAverage::new(params.period).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut ema = ExponentialMovingAverage::new(params.period)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
                 let mut ema_values = Vec::new();
                 for &close in &closes {
                     ema_values.push(ema.next(close));
@@ -118,11 +130,13 @@ impl TechnicalIndicatorTool {
                     "price_vs_ema": if current_price > current_ema { "above" } else { "below" },
                     "recent_values": &ema_values[ema_values.len().saturating_sub(10)..],
                 })
-            },
+            }
             "MACD" => {
                 // Calculate simple MACD using EMA difference
-                let mut ema12 = ExponentialMovingAverage::new(12).map_err(|e| StockError::IndicatorError(e.to_string()))?;
-                let mut ema26 = ExponentialMovingAverage::new(26).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut ema12 = ExponentialMovingAverage::new(12)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut ema26 = ExponentialMovingAverage::new(26)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
 
                 let mut macd_line = Vec::new();
                 for &close in &closes {
@@ -139,9 +153,10 @@ impl TechnicalIndicatorTool {
                     "interpretation": if current_macd > 0.0 { "Bullish" } else { "Bearish" },
                     "recent_values": &macd_line[macd_line.len().saturating_sub(10)..],
                 })
-            },
+            }
             "BBANDS" | "BB" => {
-                let mut bb = BollingerBands::new(params.period, 2.0).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut bb = BollingerBands::new(params.period, 2.0)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
                 let mut bb_values: Vec<f64> = Vec::new();
                 for &close in &closes {
                     let bb_result = bb.next(close);
@@ -158,9 +173,10 @@ impl TechnicalIndicatorTool {
                     "current_price": current_price,
                     "interpretation": "Volatility bands around price",
                 })
-            },
+            }
             "ATR" => {
-                let mut atr = AverageTrueRange::new(params.period).map_err(|e| StockError::IndicatorError(e.to_string()))?;
+                let mut atr = AverageTrueRange::new(params.period)
+                    .map_err(|e| StockError::IndicatorError(e.to_string()))?;
                 let mut atr_values = Vec::new();
                 for i in 0..highs.len() {
                     let bar = ta::DataItem::builder()
@@ -180,11 +196,12 @@ impl TechnicalIndicatorTool {
                     "current_value": current_atr,
                     "interpretation": "Measures market volatility",
                 })
-            },
+            }
             _ => {
-                return Err(StockError::IndicatorError(
-                    format!("Unsupported indicator: {}. Supported: RSI, SMA, EMA, MACD, BBANDS, ATR", params.indicator)
-                ));
+                return Err(StockError::IndicatorError(format!(
+                    "Unsupported indicator: {}. Supported: RSI, SMA, EMA, MACD, BBANDS, ATR",
+                    params.indicator
+                )));
             }
         };
 
@@ -208,12 +225,12 @@ fn interpret_rsi(rsi: f64) -> &'static str {
     }
 }
 
-
 #[async_trait]
 impl Tool for TechnicalIndicatorTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
-        let params: TechnicalParams = serde_json::from_value(params)
-            .map_err(|e| agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e)))?;
+        let params: TechnicalParams = serde_json::from_value(params).map_err(|e| {
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+        })?;
 
         self.calculate_indicator(params)
             .await

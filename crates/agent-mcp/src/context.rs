@@ -3,9 +3,9 @@
 //! This module provides extension traits and utilities for integrating MCP
 //! resources with agent-rs Context types.
 
-use crate::resource::{MCPResource, ResourceCache};
 use crate::MCPClientManager;
 use crate::error::MCPError;
+use crate::resource::{MCPResource, ResourceCache};
 use std::sync::Arc;
 
 type Result<T> = std::result::Result<T, MCPError>;
@@ -14,6 +14,7 @@ type Result<T> = std::result::Result<T, MCPError>;
 ///
 /// This trait can be implemented for any context type that needs MCP support.
 /// It provides methods for accessing resources from MCP servers.
+#[allow(async_fn_in_trait)]
 pub trait MCPContextExt {
     /// Get the MCP resource cache
     fn mcp_cache(&self) -> Option<&ResourceCache>;
@@ -105,7 +106,10 @@ impl MCPContext {
     }
 
     /// Search for resources matching a pattern
-    pub async fn search_resources(&self, pattern: &str) -> Result<Vec<crate::client::MCPResourceInfo>> {
+    pub async fn search_resources(
+        &self,
+        pattern: &str,
+    ) -> Result<Vec<crate::client::MCPResourceInfo>> {
         let all_resources = self.cache.discover_resources().await?;
 
         // Simple pattern matching

@@ -23,5 +23,5 @@ pub use provider::LLMProvider;
 pub use tools::ToolDefinition;
 
 // Provider implementations (feature-gated)
-#[cfg(feature = "anthropic")]
+#[cfg(any(feature = "anthropic", feature = "openai", feature = "ollama"))]
 pub mod providers;

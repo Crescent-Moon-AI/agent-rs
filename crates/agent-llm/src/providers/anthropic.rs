@@ -4,8 +4,8 @@
 //! See: https://docs.anthropic.com/en/api/messages
 
 use crate::{
-    CompletionRequest, CompletionResponse, ContentBlock, LLMProvider, Message, Result, StopReason,
-    ToolDefinition, TokenUsage, Role, MessageContent,
+    CompletionRequest, CompletionResponse, ContentBlock, LLMProvider, Message, MessageContent,
+    Result, Role, StopReason, TokenUsage, ToolDefinition,
 };
 use async_trait::async_trait;
 use reqwest::Client;
