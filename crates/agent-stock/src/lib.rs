@@ -25,19 +25,23 @@
 //!
 //! # Example
 //!
-//! ```rust,no_run
-//! use agent_stock::StockAnalysisAgent;
+//! ```rust,ignore
+//! use agent_stock::{StockAnalysisAgent, StockConfig};
 //! use agent_runtime::AgentRuntime;
+//! use std::sync::Arc;
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
 //!     // Create runtime with LLM provider
-//!     let runtime = AgentRuntime::builder()
+//!     let runtime = Arc::new(AgentRuntime::builder()
 //!         .provider(/* your provider */)
-//!         .build()?;
+//!         .build()?);
+//!
+//!     // Create config
+//!     let config = Arc::new(StockConfig::default());
 //!
 //!     // Create stock analysis agent
-//!     let agent = StockAnalysisAgent::new(runtime).await?;
+//!     let agent = StockAnalysisAgent::new(runtime, config).await?;
 //!
 //!     // Analyze a stock
 //!     let result = agent.analyze("AAPL").await?;
@@ -52,6 +56,7 @@ pub mod api;
 pub mod cache;
 pub mod config;
 pub mod error;
+pub mod prompts;
 pub mod tools;
 
 // Re-export main types for convenience
@@ -59,8 +64,11 @@ pub use agents::{
     DataFetcherAgent, EarningsAnalyzerAgent, FundamentalAnalyzerAgent,
     MacroAnalyzerAgent, NewsAnalyzerAgent, StockAnalysisAgent, TechnicalAnalyzerAgent,
 };
-pub use config::{ResponseLanguage, StockConfig};
+pub use config::StockConfig;
 pub use error::{Result, StockError};
+
+// Re-export Language from agent-prompt
+pub use agent_prompt::Language;
 
 // Re-export commonly used tools
 pub use tools::{

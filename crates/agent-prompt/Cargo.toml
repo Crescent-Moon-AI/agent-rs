@@ -1,0 +1,33 @@
+[package]
+name = "agent-prompt"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Prompt template management for agent-rs"
+license = "MIT"
+
+[dependencies]
+# Template engine
+minijinja = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Optional: Integration with agent-core
+agent-core = { workspace = true, optional = true }
+
+# Optional: File loading
+tokio = { workspace = true, optional = true }
+
+[features]
+default = []
+core-integration = ["agent-core"]
+file-loader = ["tokio"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+tempfile = "3"

@@ -8,6 +8,7 @@ members = [
     "crates/agent-workflow",
     "crates/agent-utils",
     "crates/agent-mcp",
+    "crates/agent-prompt",
     "crates/agent-stock",
     "crates/agent-cli",
     "crates/xtask",
@@ -66,6 +67,9 @@ cached = "0.56.0"
 yahoo_finance_api = "4.1.0"
 governor = "0.10.2"
 
+# Template engine
+minijinja = "2.12"
+
 # Internal workspace crates
 agent-core = { path = "crates/agent-core", version = "0.0.0" }
 agent-llm = { path = "crates/agent-llm", version = "0.0.0" }
@@ -74,6 +78,7 @@ agent-runtime = { path = "crates/agent-runtime", version = "0.0.0" }
 agent-workflow = { path = "crates/agent-workflow", version = "0.0.0" }
 agent-utils = { path = "crates/agent-utils", version = "0.0.0" }
 agent-mcp = { path = "crates/agent-mcp", version = "0.0.0" }
+agent-prompt = { path = "crates/agent-prompt", version = "0.0.0" }
 agent-stock = { path = "crates/agent-stock", version = "0.0.0" }
 
 [workspace.package]

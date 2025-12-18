@@ -1,7 +1,9 @@
 //! Configuration for stock analysis operations
 
 use crate::error::{Result, StockError};
+use agent_prompt::{Language, PromptRegistry};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::Duration;
 
 /// Data provider for stock information
@@ -26,18 +28,8 @@ pub enum NewsProvider {
     AlphaVantage,
 }
 
-/// Language for agent responses
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum ResponseLanguage {
-    /// Chinese (default)
-    #[default]
-    Chinese,
-    /// English
-    English,
-}
-
 /// Configuration for stock analysis operations
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct StockConfig {
     /// Default data provider to use
     pub default_provider: DataProvider,
@@ -100,11 +92,17 @@ pub struct StockConfig {
     pub max_tokens: usize,
 
     /// Language for agent responses
-    pub response_language: ResponseLanguage,
+    pub response_language: Language,
+
+    /// Prompt registry for template management
+    pub prompt_registry: Arc<PromptRegistry>,
 }
 
 impl Default for StockConfig {
     fn default() -> Self {
+        let registry = PromptRegistry::with_language(Language::Chinese);
+        crate::prompts::register_prompts(&registry).expect("Failed to register prompts");
+
         Self {
             default_provider: DataProvider::Yahoo,
             cache_ttl_realtime: Duration::from_secs(60), // 1 minute
@@ -126,7 +124,8 @@ impl Default for StockConfig {
             model: "claude-opus-4-5-20251101".to_string(),
             temperature: 0.5,
             max_tokens: 4096,
-            response_language: ResponseLanguage::Chinese,
+            response_language: Language::Chinese,
+            prompt_registry: Arc::new(registry),
         }
     }
 }
@@ -206,7 +205,7 @@ pub struct StockConfigBuilder {
     model: Option<String>,
     temperature: Option<f32>,
     max_tokens: Option<usize>,
-    response_language: Option<ResponseLanguage>,
+    response_language: Option<Language>,
 }
 
 impl StockConfigBuilder {
@@ -357,7 +356,7 @@ impl StockConfigBuilder {
     }
 
     /// Set the response language
-    pub fn response_language(mut self, language: ResponseLanguage) -> Self {
+    pub fn response_language(mut self, language: Language) -> Self {
         self.response_language = Some(language);
         self
     }
@@ -379,8 +378,8 @@ impl StockConfigBuilder {
         }
         if let Ok(lang) = std::env::var("STOCK_RESPONSE_LANGUAGE") {
             self.response_language = match lang.to_lowercase().as_str() {
-                "chinese" | "zh" | "中文" => Some(ResponseLanguage::Chinese),
-                "english" | "en" => Some(ResponseLanguage::English),
+                "chinese" | "zh" | "中文" => Some(Language::Chinese),
+                "english" | "en" => Some(Language::English),
                 _ => None,
             };
         }
@@ -389,6 +388,13 @@ impl StockConfigBuilder {
 
     /// Build the configuration
     pub fn build(self) -> Result<StockConfig> {
+        let response_language = self.response_language.unwrap_or(Language::Chinese);
+
+        // Create registry with the specified language
+        let registry = PromptRegistry::with_language(response_language.clone());
+        crate::prompts::register_prompts(&registry)
+            .map_err(|e| StockError::ConfigError(format!("Failed to register prompts: {}", e)))?;
+
         let defaults = StockConfig::default();
 
         let config = StockConfig {
@@ -420,7 +426,8 @@ impl StockConfigBuilder {
             model: self.model.unwrap_or(defaults.model),
             temperature: self.temperature.unwrap_or(defaults.temperature),
             max_tokens: self.max_tokens.unwrap_or(defaults.max_tokens),
-            response_language: self.response_language.unwrap_or(defaults.response_language),
+            response_language,
+            prompt_registry: Arc::new(registry),
         };
 
         config.validate()?;
