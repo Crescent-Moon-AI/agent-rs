@@ -9,6 +9,8 @@ Comprehensive stock market analysis framework using multi-agent LLM architecture
   - `TechnicalAnalyzerAgent`: Performs technical analysis (RSI, MACD, Bollinger Bands, etc.)
   - `FundamentalAnalyzerAgent`: Analyzes company fundamentals (P/E, market cap, financials)
   - `NewsAnalyzerAgent`: Analyzes news and market sentiment
+  - `EarningsAnalyzerAgent`: Analyzes SEC filings (10-K, 10-Q) and financial statements
+  - `MacroAnalyzerAgent`: Analyzes macroeconomic conditions, Fed policy, and geopolitical risks
   - `StockAnalysisAgent`: Top-level delegating agent that coordinates specialists
 
 - **70+ Technical Indicators**: Powered by `rust_ti` crate
@@ -16,12 +18,24 @@ Comprehensive stock market analysis framework using multi-agent LLM architecture
 
 - **Multiple Data Sources**:
   - Yahoo Finance (primary, no API key required)
-  - Alpha Vantage (secondary, for fundamental data)
+  - Alpha Vantage (fundamental data and news sentiment)
+  - SEC EDGAR (10-K, 10-Q filings and financial data)
+  - FRED (Federal Reserve Economic Data for macro indicators)
+  - Finnhub (market news)
+
+- **Comprehensive Analysis Capabilities**:
+  - Earnings report analysis from SEC filings
+  - Macroeconomic indicators (Fed rates, inflation, GDP, unemployment)
+  - Sector rotation analysis
+  - Geopolitical risk assessment
 
 - **Smart Caching**: Multi-tiered caching system reduces API calls
   - Real-time data: 60-second TTL
   - Fundamental data: 1-hour TTL
   - News data: 5-minute TTL
+  - Earnings data: 24-hour TTL
+  - Macro data: 1-hour TTL
+  - Sector data: 30-minute TTL
 
 - **Robust Error Handling**: Automatic retries with exponential backoff
 
@@ -77,13 +91,19 @@ async fn main() -> anyhow::Result<()> {
 ### Environment Variables
 
 ```bash
-# Required
+# Required for LLM
 export ANTHROPIC_API_KEY=your_anthropic_key
 
-# Optional (for fundamental data)
+# Optional - for fundamental data and news sentiment
 export ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
 
-# Optional (configure response language, default is Chinese)
+# Optional - for market news
+export FINNHUB_API_KEY=your_finnhub_key
+
+# Optional - for macroeconomic data (FRED)
+export FRED_API_KEY=your_fred_key
+
+# Optional - configure response language (default is Chinese)
 export STOCK_RESPONSE_LANGUAGE=chinese  # or: english, zh, en
 ```
 
@@ -144,8 +164,16 @@ StockAnalysisAgent (Coordinator)
 ├── FundamentalAnalyzerAgent
 │   └── FundamentalDataTool
 │
-└── NewsAnalyzerAgent
-    └── NewsTool
+├── NewsAnalyzerAgent
+│   └── NewsTool
+│
+├── EarningsAnalyzerAgent
+│   └── EarningsReportTool (SEC EDGAR)
+│
+└── MacroAnalyzerAgent
+    ├── MacroEconomicTool (FRED)
+    ├── GeopoliticalTool
+    └── SectorAnalysisTool
 ```
 
 ### Tools
@@ -157,6 +185,10 @@ Each tool is a self-contained unit that performs a specific task:
 - **FundamentalDataTool**: Retrieve company fundamentals
 - **NewsTool**: Fetch news and sentiment
 - **ChartDataTool**: Prepare data for visualization
+- **EarningsReportTool**: Fetch SEC filings (10-K, 10-Q) and financial data
+- **MacroEconomicTool**: Fetch FRED data (rates, inflation, GDP, employment)
+- **SectorAnalysisTool**: Analyze sector performance and rotation
+- **GeopoliticalTool**: Analyze geopolitical risks and market impact
 
 ## Usage Examples
 
@@ -193,6 +225,34 @@ let news = agent.analyze_news("AAPL").await?;
 let full_analysis = agent.analyze("AAPL").await?;
 ```
 
+### Earnings Analysis
+
+```rust
+// Analyze SEC filings and financial reports
+let earnings = agent.analyze_earnings("AAPL").await?;
+```
+
+### Macroeconomic Analysis
+
+```rust
+// Analyze Fed policy, inflation, GDP, and economic conditions
+let macro_view = agent.analyze_macro().await?;
+```
+
+### Geopolitical Analysis
+
+```rust
+// Assess geopolitical risks and market impact
+let geo_analysis = agent.analyze_geopolitical().await?;
+```
+
+### Comprehensive Analysis with Macro Factors
+
+```rust
+// Full investment analysis including macro environment
+let comprehensive = agent.analyze_comprehensive("AAPL").await?;
+```
+
 ## Supported Indicators
 
 ### Trend Indicators
@@ -218,11 +278,27 @@ let full_analysis = agent.analyze("AAPL").await?;
 - **Use cases**: Price data, historical quotes, basic company info
 - **Rate limits**: Generous for individual use
 
-### Alpha Vantage (Secondary)
-- **Advantages**: Comprehensive fundamental data, real-time quotes
-- **Use cases**: Company overview, financial metrics (P/E, EPS, market cap)
+### Alpha Vantage
+- **Advantages**: Comprehensive fundamental data, news sentiment analysis
+- **Use cases**: Company overview, financial metrics (P/E, EPS, market cap), news
 - **Requirements**: API key (free tier available)
 - **Rate limits**: 5 requests/minute (free tier)
+
+### SEC EDGAR
+- **Advantages**: Official SEC filings, free, no API key required
+- **Use cases**: 10-K annual reports, 10-Q quarterly reports, financial statements
+- **Rate limits**: 10 requests/second
+
+### FRED (Federal Reserve Economic Data)
+- **Advantages**: Official economic data, comprehensive time series
+- **Use cases**: Interest rates, inflation (CPI, PCE), GDP, unemployment
+- **Requirements**: API key (free)
+- **Rate limits**: 120 requests/minute
+
+### Finnhub
+- **Advantages**: Real-time market news, company news
+- **Use cases**: News aggregation, market sentiment
+- **Requirements**: API key (free tier: 60 requests/minute)
 
 ## Caching Strategy
 
@@ -233,6 +309,9 @@ CacheManager {
     realtime: StockCache,      // 60s TTL for quotes/prices
     fundamental: StockCache,    // 1h TTL for company data
     news: StockCache,          // 5m TTL for news articles
+    earnings: StockCache,      // 24h TTL for SEC filings
+    macro: StockCache,         // 1h TTL for economic data
+    sector: StockCache,        // 30m TTL for sector data
 }
 ```
 
@@ -275,13 +354,17 @@ cargo test --package agent-stock -- --ignored
 ## Limitations & Future Work
 
 ### Current Limitations
-1. News data is currently mocked (needs real news API integration)
+1. Some news data may use mock responses if API keys not configured
 2. Company info from Yahoo Finance API is limited
 3. No options chain data yet
 4. No portfolio analysis
 
 ### Planned Enhancements
-- [ ] Real news API integration (NewsAPI, Finnhub)
+- [x] Real news API integration (Finnhub, Alpha Vantage)
+- [x] SEC EDGAR integration for earnings reports
+- [x] FRED integration for macroeconomic data
+- [x] Sector rotation analysis
+- [x] Geopolitical risk assessment
 - [ ] MCP server integration
 - [ ] Portfolio analysis and tracking
 - [ ] Backtesting capabilities
@@ -317,5 +400,8 @@ This crate is part of the agent-rs workspace.
 
 - [Yahoo Finance API](https://finance.yahoo.com/)
 - [Alpha Vantage API](https://www.alphavantage.co/)
+- [SEC EDGAR API](https://www.sec.gov/edgar/sec-api-documentation)
+- [FRED API](https://fred.stlouisfed.org/docs/api/fred/)
+- [Finnhub API](https://finnhub.io/docs/api)
 - [rust_ti Documentation](https://crates.io/crates/rust_ti)
 - [Technical Analysis Primer](https://www.investopedia.com/technical-analysis-4689657)

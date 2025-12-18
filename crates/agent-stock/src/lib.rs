@@ -7,6 +7,9 @@
 //! - Technical analysis with 70+ indicators (RSI, MACD, Bollinger Bands, etc.)
 //! - Fundamental analysis (P/E ratios, market cap, financials)
 //! - News and sentiment analysis
+//! - Earnings report analysis (SEC EDGAR 10-K/10-Q filings)
+//! - Macroeconomic analysis (Fed policy, economic indicators)
+//! - Geopolitical risk assessment
 //! - Multi-agent coordination via delegating agent pattern
 //!
 //! # Architecture
@@ -17,6 +20,8 @@
 //! - `TechnicalAnalyzerAgent`: Performs technical analysis
 //! - `FundamentalAnalyzerAgent`: Analyzes fundamentals
 //! - `NewsAnalyzerAgent`: Analyzes news and sentiment
+//! - `EarningsAnalyzerAgent`: Analyzes SEC filings and earnings reports
+//! - `MacroAnalyzerAgent`: Analyzes macroeconomic conditions
 //!
 //! # Example
 //!
@@ -50,6 +55,15 @@ pub mod error;
 pub mod tools;
 
 // Re-export main types for convenience
-pub use agents::stock_analysis::StockAnalysisAgent;
+pub use agents::{
+    DataFetcherAgent, EarningsAnalyzerAgent, FundamentalAnalyzerAgent,
+    MacroAnalyzerAgent, NewsAnalyzerAgent, StockAnalysisAgent, TechnicalAnalyzerAgent,
+};
 pub use config::{ResponseLanguage, StockConfig};
 pub use error::{Result, StockError};
+
+// Re-export commonly used tools
+pub use tools::{
+    EarningsReportTool, GeopoliticalTool, MacroEconomicTool,
+    SectorAnalysisTool,
+};

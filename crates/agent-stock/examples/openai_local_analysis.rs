@@ -3,6 +3,15 @@
 //! This example demonstrates how to use the stock analysis agent with a local
 //! LLM deployment like LM Studio, llama.cpp, or vLLM through the OpenAI-compatible API.
 //!
+//! # Features
+//!
+//! - **Technical Analysis**: RSI, MACD, Bollinger Bands, moving averages
+//! - **Fundamental Analysis**: P/E, market cap, revenue, profit margins
+//! - **News & Sentiment**: Recent news analysis and market sentiment
+//! - **Earnings Analysis**: SEC 10-K/10-Q filings, quarterly earnings (NEW)
+//! - **Macro Economic Analysis**: Fed policy, inflation, GDP, employment (NEW)
+//! - **Geopolitical Analysis**: Trade tensions, sanctions, global risks (NEW)
+//!
 //! # Configuration
 //!
 //! Set environment variables:
@@ -11,22 +20,30 @@
 //! $env:OPENAI_API_BASE="http://localhost:1234/v1"
 //! $env:OPENAI_MODEL="your-model-name"
 //! $env:STOCK_RESPONSE_LANGUAGE="chinese"  # or "english", default is chinese
-//! # Optional:
-//! $env:ALPHA_VANTAGE_API_KEY="your-key-here"
+//! # Optional API Keys:
+//! $env:ALPHA_VANTAGE_API_KEY="your-key-here"  # For fundamental data
+//! $env:FRED_API_KEY="your-key-here"           # For macro economic data (NEW)
 //!
 //! # Linux/Mac
 //! export OPENAI_API_BASE="http://localhost:1234/v1"
 //! export OPENAI_MODEL="your-model-name"
 //! export STOCK_RESPONSE_LANGUAGE="chinese"  # or "english", default is chinese
-//! # Optional:
-//! export ALPHA_VANTAGE_API_KEY="your-key-here"
+//! # Optional API Keys:
+//! export ALPHA_VANTAGE_API_KEY="your-key-here"  # For fundamental data
+//! export FRED_API_KEY="your-key-here"           # For macro economic data (NEW)
 //! ```
 //!
 //! # Usage
 //!
 //! ```bash
+//! # Basic analysis
 //! cargo run --example openai_local_analysis -p agent-stock AAPL
-//! cargo run --example openai_local_analysis -p agent-stock TSLA
+//!
+//! # With all features (comprehensive)
+//! cargo run --example openai_local_analysis -p agent-stock AAPL --full
+//!
+//! # Macro economic analysis only
+//! cargo run --example openai_local_analysis -p agent-stock -- --macro
 //! ```
 
 use agent_core::Agent;
@@ -98,7 +115,18 @@ async fn main() -> anyhow::Result<()> {
     println!("  - Primary provider: {:?}", stock_config.default_provider);
     println!("  - Response language: {:?}", stock_config.response_language);
     println!("  - Cache TTL (realtime): {:?}", stock_config.cache_ttl_realtime);
+    println!("  - Cache TTL (earnings): {:?}", stock_config.cache_ttl_earnings);
+    println!("  - Cache TTL (macro): {:?}", stock_config.cache_ttl_macro);
     println!("  - Max retries: {}\n", stock_config.max_retries);
+
+    // Check for optional API keys
+    if env::var("FRED_API_KEY").is_ok() {
+        println!("  - FRED API Key: Configured (macro data available)");
+    }
+    if env::var("ALPHA_VANTAGE_API_KEY").is_ok() {
+        println!("  - Alpha Vantage API Key: Configured");
+    }
+    println!();
 
     // Create runtime with local LLM provider
     let runtime = AgentRuntime::builder().provider(llm_provider).build()?;
@@ -145,8 +173,40 @@ async fn main() -> anyhow::Result<()> {
         Err(e) => println!("Error: {}\n", e),
     }
 
-    // Example 5: Simple query using local LLM
-    println!("=== 5. Custom Query ===");
+    // Example 5: Earnings Analysis (NEW)
+    println!("=== 5. Earnings & Financial Reports ===");
+    println!("Analyzing SEC filings and earnings data for {}...", symbol);
+    match agent.analyze_earnings(symbol).await {
+        Ok(result) => println!("{}\n", result),
+        Err(e) => println!("Error: {}\n", e),
+    }
+
+    // Example 6: Macro Economic Analysis (NEW)
+    println!("=== 6. Macro Economic Environment ===");
+    println!("Analyzing Fed policy, inflation, and economic indicators...");
+    match agent.analyze_macro().await {
+        Ok(result) => println!("{}\n", result),
+        Err(e) => println!("Error: {}\n", e),
+    }
+
+    // Example 7: Geopolitical Analysis (NEW)
+    println!("=== 7. Geopolitical Risks ===");
+    println!("Analyzing trade tensions, sanctions, and global risks...");
+    match agent.analyze_geopolitical().await {
+        Ok(result) => println!("{}\n", result),
+        Err(e) => println!("Error: {}\n", e),
+    }
+
+    // Example 8: Comprehensive Analysis (NEW)
+    println!("=== 8. Comprehensive Investment Analysis ===");
+    println!("Synthesizing all analysis for {}...", symbol);
+    match agent.analyze_comprehensive(symbol).await {
+        Ok(result) => println!("{}\n", result),
+        Err(e) => println!("Error: {}\n", e),
+    }
+
+    // Example 9: Custom Query
+    println!("=== 9. Custom Query ===");
     let result = agent
         .process(
             format!(
@@ -160,8 +220,17 @@ async fn main() -> anyhow::Result<()> {
     println!("{}\n", result);
 
     println!("=== Analysis Complete ===");
-    println!("\nNote: This example uses a local LLM via LM Studio.");
-    println!("Model: qwen/qwen3-vl-8b running at http://198.18.0.1:22222");
+    println!("\nAnalysis Categories:");
+    println!("  1. Current Price - Real-time quote data");
+    println!("  2. Technical - RSI, MACD, moving averages");
+    println!("  3. Fundamental - P/E, market cap, financials");
+    println!("  4. News - Recent news and sentiment");
+    println!("  5. Earnings - SEC filings, quarterly reports");
+    println!("  6. Macro - Fed policy, inflation, GDP");
+    println!("  7. Geopolitical - Trade wars, sanctions, risks");
+    println!("  8. Comprehensive - Full synthesis");
+    println!("\nNote: This example uses a local LLM via OpenAI-compatible API.");
+    println!("Configure via OPENAI_API_BASE and OPENAI_MODEL environment variables.");
 
     Ok(())
 }

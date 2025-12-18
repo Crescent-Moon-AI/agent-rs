@@ -51,6 +51,15 @@ pub struct StockConfig {
     /// Cache TTL for news data
     pub cache_ttl_news: Duration,
 
+    /// Cache TTL for earnings data
+    pub cache_ttl_earnings: Duration,
+
+    /// Cache TTL for macro economic data
+    pub cache_ttl_macro: Duration,
+
+    /// Cache TTL for sector data
+    pub cache_ttl_sector: Duration,
+
     /// Maximum number of retries for API calls
     pub max_retries: u32,
 
@@ -72,6 +81,15 @@ pub struct StockConfig {
     /// Finnhub.io API key (optional)
     pub finnhub_api_key: Option<String>,
 
+    /// FRED API key (for macroeconomic data)
+    pub fred_api_key: Option<String>,
+
+    /// SEC EDGAR User-Agent (required for SEC API)
+    pub sec_user_agent: String,
+
+    /// SEC contact email (required for SEC API)
+    pub sec_contact_email: String,
+
     /// LLM model for analysis
     pub model: String,
 
@@ -92,6 +110,9 @@ impl Default for StockConfig {
             cache_ttl_realtime: Duration::from_secs(60), // 1 minute
             cache_ttl_fundamental: Duration::from_secs(3600), // 1 hour
             cache_ttl_news: Duration::from_secs(300),    // 5 minutes
+            cache_ttl_earnings: Duration::from_secs(86400), // 24 hours
+            cache_ttl_macro: Duration::from_secs(3600),  // 1 hour
+            cache_ttl_sector: Duration::from_secs(1800), // 30 minutes
             max_retries: 3,
             retry_backoff_base: Duration::from_secs(1),
             request_timeout: Duration::from_secs(30),
@@ -99,6 +120,9 @@ impl Default for StockConfig {
             alpha_vantage_rate_limit: 5, // Free tier: 5 requests/minute
             news_provider: NewsProvider::Mock,
             finnhub_api_key: None,
+            fred_api_key: None,
+            sec_user_agent: "agent-stock".to_string(),
+            sec_contact_email: "agent-stock@example.com".to_string(),
             model: "claude-opus-4-5-20251101".to_string(),
             temperature: 0.5,
             max_tokens: 4096,
@@ -166,6 +190,9 @@ pub struct StockConfigBuilder {
     cache_ttl_realtime: Option<Duration>,
     cache_ttl_fundamental: Option<Duration>,
     cache_ttl_news: Option<Duration>,
+    cache_ttl_earnings: Option<Duration>,
+    cache_ttl_macro: Option<Duration>,
+    cache_ttl_sector: Option<Duration>,
     max_retries: Option<u32>,
     retry_backoff_base: Option<Duration>,
     request_timeout: Option<Duration>,
@@ -173,6 +200,9 @@ pub struct StockConfigBuilder {
     alpha_vantage_rate_limit: Option<u32>,
     news_provider: Option<NewsProvider>,
     finnhub_api_key: Option<String>,
+    fred_api_key: Option<String>,
+    sec_user_agent: Option<String>,
+    sec_contact_email: Option<String>,
     model: Option<String>,
     temperature: Option<f32>,
     max_tokens: Option<usize>,
@@ -262,6 +292,39 @@ impl StockConfigBuilder {
         self
     }
 
+    /// Set FRED API key
+    pub fn fred_api_key(mut self, key: impl Into<String>) -> Self {
+        self.fred_api_key = Some(key.into());
+        self
+    }
+
+    /// Load FRED API key from environment
+    pub fn with_env_fred_key(mut self) -> Self {
+        if let Ok(key) = std::env::var("FRED_API_KEY") {
+            self.fred_api_key = Some(key);
+        }
+        self
+    }
+
+    /// Set SEC User-Agent
+    pub fn sec_user_agent(mut self, agent: impl Into<String>) -> Self {
+        self.sec_user_agent = Some(agent.into());
+        self
+    }
+
+    /// Set SEC contact email
+    pub fn sec_contact_email(mut self, email: impl Into<String>) -> Self {
+        self.sec_contact_email = Some(email.into());
+        self
+    }
+
+    /// Load all API keys from environment variables
+    pub fn with_env_all_keys(self) -> Self {
+        self.with_env_api_key()
+            .with_env_finnhub_key()
+            .with_env_fred_key()
+    }
+
     /// Load news provider from environment (NEWS_PROVIDER=Mock|Finnhub|AlphaVantage)
     pub fn with_env_news_provider(mut self) -> Self {
         if let Ok(provider) = std::env::var("NEWS_PROVIDER") {
@@ -337,6 +400,9 @@ impl StockConfigBuilder {
                 .cache_ttl_fundamental
                 .unwrap_or(defaults.cache_ttl_fundamental),
             cache_ttl_news: self.cache_ttl_news.unwrap_or(defaults.cache_ttl_news),
+            cache_ttl_earnings: self.cache_ttl_earnings.unwrap_or(defaults.cache_ttl_earnings),
+            cache_ttl_macro: self.cache_ttl_macro.unwrap_or(defaults.cache_ttl_macro),
+            cache_ttl_sector: self.cache_ttl_sector.unwrap_or(defaults.cache_ttl_sector),
             max_retries: self.max_retries.unwrap_or(defaults.max_retries),
             retry_backoff_base: self
                 .retry_backoff_base
@@ -348,6 +414,9 @@ impl StockConfigBuilder {
                 .unwrap_or(defaults.alpha_vantage_rate_limit),
             news_provider: self.news_provider.unwrap_or(defaults.news_provider),
             finnhub_api_key: self.finnhub_api_key,
+            fred_api_key: self.fred_api_key,
+            sec_user_agent: self.sec_user_agent.unwrap_or(defaults.sec_user_agent),
+            sec_contact_email: self.sec_contact_email.unwrap_or(defaults.sec_contact_email),
             model: self.model.unwrap_or(defaults.model),
             temperature: self.temperature.unwrap_or(defaults.temperature),
             max_tokens: self.max_tokens.unwrap_or(defaults.max_tokens),
