@@ -1,4 +1,7 @@
 //! Error types for stock analysis operations
+//!
+//! This module provides a comprehensive error handling system for stock analysis,
+//! with proper error chaining and context preservation.
 
 use thiserror::Error;
 
@@ -49,9 +52,75 @@ pub enum StockError {
     #[error("Cache error: {0}")]
     CacheError(String),
 
+    /// Agent routing error
+    #[error("Routing error: {0}")]
+    RoutingError(String),
+
+    /// Agent execution error
+    #[error("Agent execution error [{agent}]: {message}")]
+    AgentError { agent: String, message: String },
+
+    /// Conversation context error
+    #[error("Conversation error: {0}")]
+    ConversationError(String),
+
+    /// Command parsing error
+    #[error("Invalid command: {0}")]
+    CommandError(String),
+
+    /// Timeout error
+    #[error("Operation timed out: {0}")]
+    Timeout(String),
+
     /// Generic error
     #[error("{0}")]
     Other(String),
+}
+
+impl StockError {
+    /// Create an API error with context
+    pub fn api(msg: impl Into<String>) -> Self {
+        Self::ApiError(msg.into())
+    }
+
+    /// Create a data unavailable error
+    pub fn data_unavailable(symbol: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self::DataUnavailable {
+            symbol: symbol.into(),
+            reason: reason.into(),
+        }
+    }
+
+    /// Create a rate limit error
+    pub fn rate_limited(provider: impl Into<String>) -> Self {
+        Self::RateLimitExceeded {
+            provider: provider.into(),
+        }
+    }
+
+    /// Create an agent error
+    pub fn agent(name: impl Into<String>, message: impl Into<String>) -> Self {
+        Self::AgentError {
+            agent: name.into(),
+            message: message.into(),
+        }
+    }
+
+    /// Check if the error is retryable
+    pub fn is_retryable(&self) -> bool {
+        matches!(
+            self,
+            Self::NetworkError(_) | Self::RateLimitExceeded { .. } | Self::Timeout(_)
+        )
+    }
+
+    /// Check if the error is due to invalid input
+    pub fn is_user_error(&self) -> bool {
+        matches!(
+            self,
+            Self::InvalidSymbol(_) | Self::CommandError(_) | Self::ConfigError(_)
+        )
+    }
 }
 
 /// Result type alias for stock operations

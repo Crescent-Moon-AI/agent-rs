@@ -1,9 +1,12 @@
 //! Caching layer for stock data to reduce API calls
+//!
+//! Provides a shared, thread-safe caching system for stock data with different TTLs
+//! for various data types (realtime, fundamental, news, earnings, macro, sector).
 
 use cached::{Cached, TimedCache};
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tokio::sync::RwLock;
 
@@ -121,6 +124,7 @@ impl Clone for StockCache {
 }
 
 /// Multi-tiered cache system for different data types
+#[derive(Clone)]
 pub struct CacheManager {
     /// Cache for real-time data (quotes, prices) with short TTL
     pub realtime: StockCache,
@@ -128,25 +132,64 @@ pub struct CacheManager {
     pub fundamental: StockCache,
     /// Cache for news data with medium TTL
     pub news: StockCache,
+    /// Cache for earnings data with longer TTL
+    pub earnings: StockCache,
+    /// Cache for macro economic data
+    pub macro_data: StockCache,
+    /// Cache for sector data
+    pub sector: StockCache,
+}
+
+/// Configuration for cache TTLs
+#[derive(Debug, Clone)]
+pub struct CacheTtlConfig {
+    pub realtime: Duration,
+    pub fundamental: Duration,
+    pub news: Duration,
+    pub earnings: Duration,
+    pub macro_data: Duration,
+    pub sector: Duration,
+}
+
+impl Default for CacheTtlConfig {
+    fn default() -> Self {
+        Self {
+            realtime: Duration::from_secs(60),     // 1 minute
+            fundamental: Duration::from_secs(3600), // 1 hour
+            news: Duration::from_secs(300),        // 5 minutes
+            earnings: Duration::from_secs(86400),  // 24 hours
+            macro_data: Duration::from_secs(3600), // 1 hour
+            sector: Duration::from_secs(1800),     // 30 minutes
+        }
+    }
 }
 
 impl CacheManager {
     /// Create a new cache manager with specified TTLs
     pub fn new(realtime_ttl: Duration, fundamental_ttl: Duration, news_ttl: Duration) -> Self {
+        Self::with_config(CacheTtlConfig {
+            realtime: realtime_ttl,
+            fundamental: fundamental_ttl,
+            news: news_ttl,
+            ..Default::default()
+        })
+    }
+
+    /// Create a cache manager with full configuration
+    pub fn with_config(config: CacheTtlConfig) -> Self {
         Self {
-            realtime: StockCache::new(realtime_ttl),
-            fundamental: StockCache::new(fundamental_ttl),
-            news: StockCache::new(news_ttl),
+            realtime: StockCache::new(config.realtime),
+            fundamental: StockCache::new(config.fundamental),
+            news: StockCache::new(config.news),
+            earnings: StockCache::new(config.earnings),
+            macro_data: StockCache::new(config.macro_data),
+            sector: StockCache::new(config.sector),
         }
     }
 
     /// Create a default cache manager
     pub fn default_config() -> Self {
-        Self::new(
-            Duration::from_secs(60),   // 1 minute for realtime
-            Duration::from_secs(3600), // 1 hour for fundamental
-            Duration::from_secs(300),  // 5 minutes for news
-        )
+        Self::with_config(CacheTtlConfig::default())
     }
 
     /// Clear all caches
@@ -154,7 +197,66 @@ impl CacheManager {
         self.realtime.clear().await;
         self.fundamental.clear().await;
         self.news.clear().await;
+        self.earnings.clear().await;
+        self.macro_data.clear().await;
+        self.sector.clear().await;
     }
+
+    /// Get cache statistics
+    pub async fn stats(&self) -> CacheStats {
+        CacheStats {
+            realtime_entries: self.realtime.len().await,
+            fundamental_entries: self.fundamental.len().await,
+            news_entries: self.news.len().await,
+            earnings_entries: self.earnings.len().await,
+            macro_entries: self.macro_data.len().await,
+            sector_entries: self.sector.len().await,
+        }
+    }
+}
+
+/// Statistics about cache usage
+#[derive(Debug, Clone)]
+pub struct CacheStats {
+    pub realtime_entries: usize,
+    pub fundamental_entries: usize,
+    pub news_entries: usize,
+    pub earnings_entries: usize,
+    pub macro_entries: usize,
+    pub sector_entries: usize,
+}
+
+impl CacheStats {
+    /// Total number of cached entries
+    pub fn total(&self) -> usize {
+        self.realtime_entries
+            + self.fundamental_entries
+            + self.news_entries
+            + self.earnings_entries
+            + self.macro_entries
+            + self.sector_entries
+    }
+}
+
+/// Global shared cache manager instance
+static SHARED_CACHE: OnceLock<CacheManager> = OnceLock::new();
+
+/// Get the global shared cache manager
+///
+/// This function returns a reference to a global cache manager that is shared
+/// across all agents. This ensures data consistency and reduces memory usage.
+pub fn shared_cache() -> &'static CacheManager {
+    SHARED_CACHE.get_or_init(CacheManager::default_config)
+}
+
+/// Initialize the global cache with custom configuration
+///
+/// This should be called early in the application lifecycle if custom TTLs are needed.
+/// Returns an error if the cache has already been initialized.
+pub fn init_shared_cache(config: CacheTtlConfig) -> Result<(), &'static str> {
+    SHARED_CACHE
+        .set(CacheManager::with_config(config))
+        .map_err(|_| "Shared cache already initialized")
 }
 
 #[cfg(test)]

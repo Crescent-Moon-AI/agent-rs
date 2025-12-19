@@ -11,6 +11,7 @@
 //! - Macroeconomic analysis (Fed policy, economic indicators)
 //! - Geopolitical risk assessment
 //! - Multi-agent coordination via delegating agent pattern
+//! - Interactive bot with conversation context support
 //!
 //! # Architecture
 //!
@@ -22,6 +23,14 @@
 //! - `NewsAnalyzerAgent`: Analyzes news and sentiment
 //! - `EarningsAnalyzerAgent`: Analyzes SEC filings and earnings reports
 //! - `MacroAnalyzerAgent`: Analyzes macroeconomic conditions
+//!
+//! # Features
+//!
+//! - **Smart Routing**: Queries are automatically routed to the appropriate agent
+//! - **Parallel Execution**: Comprehensive analysis runs multiple agents in parallel
+//! - **Conversation Context**: Follow-up questions understand previous context
+//! - **Stock Comparison**: Compare multiple stocks side by side
+//! - **Watchlist**: Track stocks of interest
 //!
 //! # Example
 //!
@@ -50,22 +59,47 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! # Bot Usage
+//!
+//! ```rust,ignore
+//! use agent_stock::bot::{StockBot, BotConfig};
+//!
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!     let config = BotConfig::from_env()?;
+//!     let bot = StockBot::with_provider(provider, config).await?;
+//!
+//!     // Process commands
+//!     let response = bot.process_input("/analyze AAPL").await?;
+//!     println!("{}", response);
+//!
+//!     Ok(())
+//! }
+//! ```
 
 pub mod agents;
 pub mod api;
+pub mod bot;
 pub mod cache;
 pub mod config;
 pub mod error;
 pub mod prompts;
+pub mod router;
 pub mod tools;
 
 // Re-export main types for convenience
 pub use agents::{
     DataFetcherAgent, EarningsAnalyzerAgent, FundamentalAnalyzerAgent,
     MacroAnalyzerAgent, NewsAnalyzerAgent, StockAnalysisAgent, TechnicalAnalyzerAgent,
+    ParallelAnalysisResult,
 };
 pub use config::StockConfig;
 pub use error::{Result, StockError};
+pub use router::{QueryIntent, SmartRouter, RoutingResult};
+
+// Re-export cache utilities
+pub use cache::{CacheManager, CacheTtlConfig, CacheStats, shared_cache, init_shared_cache};
 
 // Re-export Language from agent-prompt
 pub use agent_prompt::Language;

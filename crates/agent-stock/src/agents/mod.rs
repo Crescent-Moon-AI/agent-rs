@@ -13,5 +13,5 @@ pub use earnings_analyzer::EarningsAnalyzerAgent;
 pub use fundamental_analyzer::FundamentalAnalyzerAgent;
 pub use macro_analyzer::MacroAnalyzerAgent;
 pub use news_analyzer::NewsAnalyzerAgent;
-pub use stock_analysis::StockAnalysisAgent;
+pub use stock_analysis::{ParallelAnalysisResult, StockAnalysisAgent};
 pub use technical_analyzer::TechnicalAnalyzerAgent;

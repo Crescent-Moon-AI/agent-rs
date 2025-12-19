@@ -16,6 +16,7 @@ agent-utils = { workspace = true }
 # Async runtime
 tokio = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 
 # Serialization
 serde = { workspace = true }
@@ -30,6 +31,7 @@ reqwest = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 # Stock-specific dependencies
 rust_ti = { workspace = true }
@@ -44,6 +46,10 @@ governor = { workspace = true }
 mockall = { workspace = true }
 tokio-test = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+[[bin]]
+name = "stock-bot"
+path = "src/bin/stock-bot.rs"
 
 [features]
 default = []
