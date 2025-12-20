@@ -83,7 +83,10 @@ pub mod api;
 pub mod bot;
 pub mod cache;
 pub mod config;
+pub mod engine;
 pub mod error;
+pub mod interface;
+pub mod platforms;
 pub mod prompts;
 pub mod router;
 pub mod tools;
@@ -93,6 +96,9 @@ pub use agents::{
     DataFetcherAgent, EarningsAnalyzerAgent, FundamentalAnalyzerAgent,
     MacroAnalyzerAgent, NewsAnalyzerAgent, StockAnalysisAgent, TechnicalAnalyzerAgent,
     ParallelAnalysisResult,
+};
+pub use engine::{
+    StockAnalysisEngine, AnalysisContext, AnalysisResult, AnalysisType, ComparisonResult,
 };
 pub use config::StockConfig;
 pub use error::{Result, StockError};

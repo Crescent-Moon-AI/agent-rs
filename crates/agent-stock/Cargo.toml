@@ -41,6 +41,7 @@ time = { workspace = true }
 cached = { workspace = true }
 yahoo_finance_api = { workspace = true }
 governor = { workspace = true }
+uuid = { version = "1.11", features = ["v4", "serde"] }
 
 [dev-dependencies]
 mockall = { workspace = true }
