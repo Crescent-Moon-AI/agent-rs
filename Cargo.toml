@@ -30,18 +30,18 @@ anyhow = "1.0"
 thiserror = "2.0"
 
 # HTTP client
-reqwest = { version = "0.12.24", features = ["json", "stream"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
 
 # Logging and tracing
-tracing = "0.1.41"
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # CLI
 clap = { version = "4.5.51", features = ["derive"] }
 
 # MCP SDK
-rust-mcp-sdk = "0.2"
-rust-mcp-schema = "0.2"
+rust-mcp-sdk = "0.7"
+rust-mcp-schema = "0.9"
 
 # Utilities
 url = "2.5"
@@ -65,7 +65,7 @@ chrono = { version = "0.4.42", features = ["serde"] }
 time = "0.3.37"
 cached = "0.56.0"
 yahoo_finance_api = "4.1.0"
-governor = "0.10.2"
+governor = "0.10.4"
 
 # Template engine
 minijinja = "2.12"
