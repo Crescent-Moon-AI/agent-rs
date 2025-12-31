@@ -125,7 +125,7 @@ pub fn array(items: Value, description: Option<&str>) -> Value {
 /// * `values` - List of allowed string values
 /// * `description` - Optional description
 pub fn enum_string(values: Vec<&str>, description: Option<&str>) -> Value {
-    let values: Vec<String> = values.into_iter().map(|s| s.to_string()).collect();
+    let values: Vec<String> = values.into_iter().map(std::string::ToString::to_string).collect();
 
     if let Some(d) = description {
         json!({

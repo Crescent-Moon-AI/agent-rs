@@ -97,7 +97,7 @@ impl Tool for MCPTool {
             .call_tool(&self.info.server_name, &self.info.definition.name, params)
             .await
             .map_err(|e| {
-                agent_core::Error::ProcessingFailed(format!("MCP tool call failed: {}", e))
+                agent_core::Error::ProcessingFailed(format!("MCP tool call failed: {e}"))
             })?;
 
         // Check if the tool returned an error

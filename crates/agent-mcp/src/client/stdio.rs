@@ -3,7 +3,7 @@
 //! Communicates with an MCP server via standard input/output by spawning
 //! the server as a child process.
 
-use super::*;
+use super::{async_trait, Arc, MCPServerInfo, Result, MCPError, Value, MCPServerCapabilities, MCPClient, MCPToolDefinition, MCPToolResult, MCPResourceDefinition, MCPResourceContent, MCPPromptDefinition, MCPPromptResult};
 use crate::config::MCPServerConfig;
 use crate::retry::RetryPolicy;
 use std::collections::HashMap;
@@ -161,7 +161,7 @@ impl StdioMCPClient {
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
-            return Err(MCPError::RequestFailed(format!("{}: {}", method, error)));
+            return Err(MCPError::RequestFailed(format!("{method}: {error}")));
         }
 
         // Return result
@@ -255,7 +255,7 @@ impl MCPClient for StdioMCPClient {
 
         let mut child = command
             .spawn()
-            .map_err(|e| MCPError::ConnectionFailed(format!("Failed to spawn process: {}", e)))?;
+            .map_err(|e| MCPError::ConnectionFailed(format!("Failed to spawn process: {e}")))?;
 
         // Get stdin/stdout
         let stdin = child
@@ -317,7 +317,7 @@ impl MCPClient for StdioMCPClient {
             .await?;
 
         let tools: Vec<MCPToolDefinition> = serde_json::from_value(result["tools"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {e}")))?;
 
         Ok(tools)
     }
@@ -335,7 +335,7 @@ impl MCPClient for StdioMCPClient {
         let result = self.send_request("tools/call", params).await?;
 
         let tool_result: MCPToolResult = serde_json::from_value(result)
-            .map_err(|e| MCPError::ToolCallFailed(format!("Failed to parse result: {}", e)))?;
+            .map_err(|e| MCPError::ToolCallFailed(format!("Failed to parse result: {e}")))?;
 
         Ok(tool_result)
     }
@@ -351,7 +351,7 @@ impl MCPClient for StdioMCPClient {
 
         let resources: Vec<MCPResourceDefinition> =
             serde_json::from_value(result["resources"].clone()).map_err(|e| {
-                MCPError::RequestFailed(format!("Failed to parse resources: {}", e))
+                MCPError::RequestFailed(format!("Failed to parse resources: {e}"))
             })?;
 
         Ok(resources)
@@ -369,7 +369,7 @@ impl MCPClient for StdioMCPClient {
         let result = self.send_request("resources/read", params).await?;
 
         let content: MCPResourceContent = serde_json::from_value(result["contents"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resource: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resource: {e}")))?;
 
         Ok(content)
     }
@@ -385,7 +385,7 @@ impl MCPClient for StdioMCPClient {
 
         let prompts: Vec<MCPPromptDefinition> =
             serde_json::from_value(result["prompts"].clone())
-                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
+                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {e}")))?;
 
         Ok(prompts)
     }
@@ -403,7 +403,7 @@ impl MCPClient for StdioMCPClient {
         let result = self.send_request("prompts/get", params).await?;
 
         let prompt_result: MCPPromptResult = serde_json::from_value(result)
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompt: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompt: {e}")))?;
 
         Ok(prompt_result)
     }

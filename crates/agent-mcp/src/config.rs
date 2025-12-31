@@ -193,10 +193,10 @@ impl MCPConfig {
     /// ```
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, MCPError> {
         let content = std::fs::read_to_string(path.as_ref())
-            .map_err(|e| MCPError::ConfigError(format!("Failed to read config file: {}", e)))?;
+            .map_err(|e| MCPError::ConfigError(format!("Failed to read config file: {e}")))?;
 
         let mut config: MCPConfig = serde_json::from_str(&content)
-            .map_err(|e| MCPError::ConfigError(format!("Failed to parse config file: {}", e)))?;
+            .map_err(|e| MCPError::ConfigError(format!("Failed to parse config file: {e}")))?;
 
         // Resolve environment variables
         config.resolve_env_vars()?;
@@ -325,10 +325,10 @@ impl MCPConfig {
     /// * `path` - Path to save the configuration file
     pub fn save_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), MCPError> {
         let json = serde_json::to_string_pretty(self)
-            .map_err(|e| MCPError::ConfigError(format!("Failed to serialize config: {}", e)))?;
+            .map_err(|e| MCPError::ConfigError(format!("Failed to serialize config: {e}")))?;
 
         std::fs::write(path.as_ref(), json)
-            .map_err(|e| MCPError::ConfigError(format!("Failed to write config file: {}", e)))?;
+            .map_err(|e| MCPError::ConfigError(format!("Failed to write config file: {e}")))?;
 
         Ok(())
     }

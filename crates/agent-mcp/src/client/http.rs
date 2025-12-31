@@ -3,7 +3,7 @@
 //! Communicates with a remote MCP server via HTTP and Server-Sent Events.
 //! Uses JSON-RPC 2.0 protocol over HTTP POST requests.
 
-use super::*;
+use super::{async_trait, Arc, MCPServerInfo, Result, MCPError, Value, MCPServerCapabilities, MCPClient, MCPToolDefinition, MCPToolResult, MCPResourceDefinition, MCPResourceContent, MCPPromptDefinition, MCPPromptResult};
 use crate::config::MCPServerConfig;
 use crate::retry::RetryPolicy;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -105,10 +105,10 @@ impl HttpMCPClient {
 
         for (key, value) in &self.headers {
             let name = HeaderName::from_str(key).map_err(|e| {
-                MCPError::ConfigError(format!("Invalid header name '{}': {}", key, e))
+                MCPError::ConfigError(format!("Invalid header name '{key}': {e}"))
             })?;
             let value = HeaderValue::from_str(value).map_err(|e| {
-                MCPError::ConfigError(format!("Invalid header value '{}': {}", value, e))
+                MCPError::ConfigError(format!("Invalid header value '{value}': {e}"))
             })?;
             header_map.insert(name, value);
         }
@@ -138,7 +138,7 @@ impl HttpMCPClient {
             .json(&request)
             .send()
             .await
-            .map_err(|e| MCPError::ConnectionFailed(format!("HTTP request failed: {}", e)))?;
+            .map_err(|e| MCPError::ConnectionFailed(format!("HTTP request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(MCPError::RequestFailed(format!(
@@ -152,13 +152,13 @@ impl HttpMCPClient {
         let response_json: Value = response
             .json()
             .await
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse response: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse response: {e}")))?;
 
         debug!("Received response for: {}", method);
 
         // Check for JSON-RPC error
         if let Some(error) = response_json.get("error") {
-            return Err(MCPError::RequestFailed(format!("{}: {}", method, error)));
+            return Err(MCPError::RequestFailed(format!("{method}: {error}")));
         }
 
         // Return result
@@ -238,7 +238,7 @@ impl MCPClient for HttpMCPClient {
         let url = self.url.clone();
         let server_info = self
             .retry_policy
-            .execute(&format!("connect to {}", url), || async {
+            .execute(&format!("connect to {url}"), || async {
                 self.initialize().await
             })
             .await?;
@@ -273,7 +273,7 @@ impl MCPClient for HttpMCPClient {
             .await?;
 
         let tools: Vec<MCPToolDefinition> = serde_json::from_value(result["tools"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse tools: {e}")))?;
 
         Ok(tools)
     }
@@ -291,7 +291,7 @@ impl MCPClient for HttpMCPClient {
         let result = self.send_request("tools/call", params).await?;
 
         let tool_result: MCPToolResult = serde_json::from_value(result)
-            .map_err(|e| MCPError::ToolCallFailed(format!("Failed to parse result: {}", e)))?;
+            .map_err(|e| MCPError::ToolCallFailed(format!("Failed to parse result: {e}")))?;
 
         Ok(tool_result)
     }
@@ -307,7 +307,7 @@ impl MCPClient for HttpMCPClient {
 
         let resources: Vec<MCPResourceDefinition> =
             serde_json::from_value(result["resources"].clone()).map_err(|e| {
-                MCPError::RequestFailed(format!("Failed to parse resources: {}", e))
+                MCPError::RequestFailed(format!("Failed to parse resources: {e}"))
             })?;
 
         Ok(resources)
@@ -325,7 +325,7 @@ impl MCPClient for HttpMCPClient {
         let result = self.send_request("resources/read", params).await?;
 
         let content: MCPResourceContent = serde_json::from_value(result["contents"].clone())
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resource: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse resource: {e}")))?;
 
         Ok(content)
     }
@@ -341,7 +341,7 @@ impl MCPClient for HttpMCPClient {
 
         let prompts: Vec<MCPPromptDefinition> =
             serde_json::from_value(result["prompts"].clone())
-                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {}", e)))?;
+                .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompts: {e}")))?;
 
         Ok(prompts)
     }
@@ -359,7 +359,7 @@ impl MCPClient for HttpMCPClient {
         let result = self.send_request("prompts/get", params).await?;
 
         let prompt_result: MCPPromptResult = serde_json::from_value(result)
-            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompt: {}", e)))?;
+            .map_err(|e| MCPError::RequestFailed(format!("Failed to parse prompt: {e}")))?;
 
         Ok(prompt_result)
     }

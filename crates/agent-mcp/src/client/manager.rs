@@ -1,6 +1,6 @@
 //! MCP client manager for coordinating multiple MCP server connections
 
-use super::*;
+use super::{MCPToolDefinition, ArcMCPClient, Result, MCPError, Value, MCPToolResult, MCPResourceInfo, MCPContent};
 use crate::config::{MCPConfig, MCPServerConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -70,7 +70,7 @@ impl MCPClientManager {
 
         for server_name in &agent_config.mcp_servers {
             let server_config = self.config.mcp_servers.get(server_name).ok_or_else(|| {
-                MCPError::ConfigError(format!("MCP server not found: {}", server_name))
+                MCPError::ConfigError(format!("MCP server not found: {server_name}"))
             })?;
 
             match self
@@ -134,8 +134,7 @@ impl MCPClientManager {
         // Verify connection
         if !client.is_connected() {
             return Err(MCPError::ConnectionFailed(format!(
-                "Client for {} reports not connected after connect()",
-                server_name
+                "Client for {server_name} reports not connected after connect()"
             )));
         }
 

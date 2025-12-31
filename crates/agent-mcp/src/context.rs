@@ -120,8 +120,7 @@ impl MCPContext {
                     || r.name.contains(pattern)
                     || r.description
                         .as_ref()
-                        .map(|d| d.contains(pattern))
-                        .unwrap_or(false)
+                        .is_some_and(|d| d.contains(pattern))
             })
             .collect();
 

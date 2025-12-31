@@ -237,11 +237,11 @@ impl ResourceFilter {
 
         // Convert glob pattern to regex
         let regex_pattern = pattern
-            .replace(".", "\\.")
-            .replace("*", ".*")
-            .replace("?", ".");
+            .replace('.', "\\.")
+            .replace('*', ".*")
+            .replace('?', ".");
 
-        if let Ok(regex) = regex::Regex::new(&format!("^{}$", regex_pattern)) {
+        if let Ok(regex) = regex::Regex::new(&format!("^{regex_pattern}$")) {
             regex.is_match(uri)
         } else {
             uri.contains(pattern)
