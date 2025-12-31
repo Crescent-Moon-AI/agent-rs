@@ -253,10 +253,10 @@ impl PromptBuilder {
         let quoted = text
             .into()
             .lines()
-            .map(|line| format!("> {}", line))
+            .map(|line| format!("> {line}"))
             .collect::<Vec<_>>()
             .join("\n");
-        self.text(format!("{}\n", quoted))
+        self.text(format!("{quoted}\n"))
     }
 
     /// Add a key-value pair

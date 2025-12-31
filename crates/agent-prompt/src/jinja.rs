@@ -140,7 +140,7 @@ impl PromptTemplate for JinjaTemplate {
     }
 
     fn raw_template(&self, lang: &Language) -> Option<&str> {
-        self.templates.get(lang).map(|s| s.as_str())
+        self.templates.get(lang).map(std::string::String::as_str)
     }
 }
 

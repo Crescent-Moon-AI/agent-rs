@@ -368,7 +368,7 @@ impl AgentExecutor {
 
                 // Get tool from registry
                 let tool = self.tool_registry.get(name).ok_or_else(|| {
-                    agent_core::Error::ProcessingFailed(format!("Tool not found: {}", name))
+                    agent_core::Error::ProcessingFailed(format!("Tool not found: {name}"))
                 })?;
 
                 // Execute tool and measure time
@@ -418,7 +418,7 @@ impl AgentExecutor {
                         }
 
                         // Return error as tool result
-                        results.push(Message::tool_error(id.clone(), format!("Error: {}", e)));
+                        results.push(Message::tool_error(id.clone(), format!("Error: {e}")));
                     }
                 }
             }

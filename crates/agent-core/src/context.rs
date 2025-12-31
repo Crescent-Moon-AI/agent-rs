@@ -57,7 +57,7 @@ impl Context {
         value: &T,
     ) -> crate::Result<()> {
         let json_value = serde_json::to_value(value).map_err(|e| {
-            crate::Error::ProcessingFailed(format!("Failed to serialize context value: {}", e))
+            crate::Error::ProcessingFailed(format!("Failed to serialize context value: {e}"))
         })?;
         self.data.insert(key.into(), json_value);
         Ok(())
@@ -96,8 +96,7 @@ impl Context {
             Some(value) => {
                 let typed = serde_json::from_value(value.clone()).map_err(|e| {
                     crate::Error::ProcessingFailed(format!(
-                        "Failed to deserialize context value: {}",
-                        e
+                        "Failed to deserialize context value: {e}"
                     ))
                 })?;
                 Ok(Some(typed))

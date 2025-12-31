@@ -273,8 +273,7 @@ impl OpenAIProvider {
         if let Some(supported) = &self.config.supported_models {
             if !supported.iter().any(|m| m == model) {
                 return Err(crate::LLMError::InvalidRequest(format!(
-                    "Model '{}' is not in the supported models list: {:?}",
-                    model, supported
+                    "Model '{model}' is not in the supported models list: {supported:?}"
                 )));
             }
         }
@@ -327,13 +326,13 @@ impl LLMProvider for OpenAIProvider {
                 429 => crate::LLMError::RateLimitExceeded(error_text),
                 400 => crate::LLMError::InvalidRequest(error_text),
                 404 => crate::LLMError::ModelNotFound(request.model),
-                _ => crate::LLMError::RequestFailed(format!("HTTP {}: {}", status, error_text)),
+                _ => crate::LLMError::RequestFailed(format!("HTTP {status}: {error_text}")),
             });
         }
 
         // Parse response
         let openai_response: OpenAIResponse = response.json().await.map_err(|e| {
-            crate::LLMError::UnexpectedResponse(format!("Failed to parse response: {}", e))
+            crate::LLMError::UnexpectedResponse(format!("Failed to parse response: {e}"))
         })?;
 
         // Extract first choice (OpenAI can return multiple but we use first)
@@ -365,7 +364,7 @@ impl LLMProvider for OpenAIProvider {
         })
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "openai"
     }
 }
@@ -576,7 +575,7 @@ fn convert_blocks(role: &str, blocks: Vec<ContentBlock>) -> Vec<OpenAIMessage> {
                 let url = match source {
                     ImageSource::Url { url } => url,
                     ImageSource::Base64 { media_type, data } => {
-                        format!("data:{};base64,{}", media_type, data)
+                        format!("data:{media_type};base64,{data}")
                     }
                 };
                 content_parts.push(ContentPart {
@@ -613,7 +612,9 @@ fn convert_blocks(role: &str, blocks: Vec<ContentBlock>) -> Vec<OpenAIMessage> {
 
     // Build the main message if we have content or tool calls
     if !content_parts.is_empty() || !tool_calls.is_empty() {
-        let content = if !content_parts.is_empty() {
+        let content = if content_parts.is_empty() {
+            None
+        } else {
             if content_parts.len() == 1 && content_parts[0].content_type == "text" {
                 // Single text part - use simple string format
                 content_parts[0].text.clone().map(OpenAIContent::Text)
@@ -621,8 +622,6 @@ fn convert_blocks(role: &str, blocks: Vec<ContentBlock>) -> Vec<OpenAIMessage> {
                 // Multiple parts or contains images - use array format
                 Some(OpenAIContent::Parts(content_parts))
             }
-        } else {
-            None
         };
 
         messages.insert(
@@ -677,8 +676,7 @@ fn parse_openai_response(msg: OpenAIResponseMessage) -> Result<Message> {
             let input: serde_json::Value =
                 serde_json::from_str(&call.function.arguments).map_err(|e| {
                     crate::LLMError::UnexpectedResponse(format!(
-                        "Failed to parse tool arguments: {}",
-                        e
+                        "Failed to parse tool arguments: {e}"
                     ))
                 })?;
 

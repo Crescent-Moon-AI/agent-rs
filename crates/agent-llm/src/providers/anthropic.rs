@@ -77,7 +77,7 @@ impl LLMProvider for AnthropicProvider {
         // Send request
         let response = self
             .client
-            .post(format!("{}/messages", ANTHROPIC_API_BASE))
+            .post(format!("{ANTHROPIC_API_BASE}/messages"))
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", ANTHROPIC_VERSION)
             .header("content-type", "application/json")
@@ -95,13 +95,13 @@ impl LLMProvider for AnthropicProvider {
                 429 => crate::LLMError::RateLimitExceeded(error_text),
                 400 => crate::LLMError::InvalidRequest(error_text),
                 404 => crate::LLMError::ModelNotFound(anthropic_request.model),
-                _ => crate::LLMError::RequestFailed(format!("HTTP {}: {}", status, error_text)),
+                _ => crate::LLMError::RequestFailed(format!("HTTP {status}: {error_text}")),
             });
         }
 
         // Parse response
         let anthropic_response: AnthropicResponse = response.json().await.map_err(|e| {
-            crate::LLMError::UnexpectedResponse(format!("Failed to parse response: {}", e))
+            crate::LLMError::UnexpectedResponse(format!("Failed to parse response: {e}"))
         })?;
 
         debug!(
@@ -134,7 +134,7 @@ impl LLMProvider for AnthropicProvider {
         })
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "anthropic"
     }
 }

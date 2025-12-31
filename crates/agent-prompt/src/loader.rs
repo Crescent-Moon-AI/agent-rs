@@ -67,10 +67,10 @@ impl FileLoader {
 
         // Try to find language-specific files
         let patterns = vec![
-            (Language::English, format!("{}_en.jinja", name)),
-            (Language::English, format!("{}_en.j2", name)),
-            (Language::Chinese, format!("{}_zh.jinja", name)),
-            (Language::Chinese, format!("{}_zh.j2", name)),
+            (Language::English, format!("{name}_en.jinja")),
+            (Language::English, format!("{name}_en.j2")),
+            (Language::Chinese, format!("{name}_zh.jinja")),
+            (Language::Chinese, format!("{name}_zh.j2")),
         ];
 
         for (lang, filename) in patterns {
@@ -89,7 +89,7 @@ impl FileLoader {
         // Try to find a single default file
         if templates.is_empty() {
             for ext in &["jinja", "j2"] {
-                let path = self.base_path.join(format!("{}.{}", name, ext));
+                let path = self.base_path.join(format!("{name}.{ext}"));
                 if path.exists() {
                     let content = std::fs::read_to_string(&path).map_err(|e| {
                         PromptError::FileLoadError {
@@ -147,7 +147,7 @@ impl FileLoader {
             };
 
             // Check for valid extensions
-            if !filename.ends_with(".jinja") && !filename.ends_with(".j2") {
+            if !Self::is_template_file(&path) {
                 continue;
             }
 
@@ -219,6 +219,13 @@ impl FileLoader {
         self.base_path.exists() && self.base_path.is_dir()
     }
 
+    /// Check if a path has a valid template extension (.jinja or .j2)
+    fn is_template_file(path: &Path) -> bool {
+        path.extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("jinja") || ext.eq_ignore_ascii_case("j2"))
+    }
+
     /// List all template names (without loading content)
     pub fn list_templates(&self) -> Result<Vec<String>> {
         let mut names = std::collections::HashSet::new();
@@ -238,8 +245,8 @@ impl FileLoader {
                 continue;
             }
 
-            if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                if filename.ends_with(".jinja") || filename.ends_with(".j2") {
+            if Self::is_template_file(&path) {
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
                     let (name, _) = self.parse_filename(filename)?;
                     names.insert(name);
                 }

@@ -201,7 +201,7 @@ impl AgentRuntime {
 
         // Initialize MCP connections
         match manager.initialize().await {
-            Ok(_) => info!("MCP client manager initialized for agent '{}'", agent_name),
+            Ok(()) => info!("MCP client manager initialized for agent '{}'", agent_name),
             Err(e) => {
                 warn!(
                     "Failed to initialize MCP clients for agent '{}': {}. Continuing with regular tools.",

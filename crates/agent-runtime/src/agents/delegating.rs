@@ -72,7 +72,7 @@ impl DelegatingAgent {
 
     /// Get the list of available agent names
     pub fn agent_names(&self) -> Vec<&str> {
-        self.sub_agents.keys().map(|s| s.as_str()).collect()
+        self.sub_agents.keys().map(std::string::String::as_str).collect()
     }
 }
 
