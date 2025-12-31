@@ -3,12 +3,14 @@ name = "agent-workflow"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-description = "Multi-agent orchestration and workflow execution for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
-keywords = ["agent", "workflow", "orchestration"]
-categories = ["asynchronous"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Multi-agent orchestration for agent-rs - workflows, pipelines, and agent coordination"
+keywords = ["agent", "workflow", "orchestration", "multi-agent"]
+categories = ["asynchronous", "development-tools"]
+readme = "README.md"
 
 [dependencies]
 # From workspace
@@ -25,3 +27,6 @@ agent-utils = { workspace = true }
 [dev-dependencies]
 tokio-test = { workspace = true }
 mockall = { workspace = true }
+
+[lints]
+workspace = true

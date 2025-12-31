@@ -71,21 +71,25 @@ governor = "0.10.4"
 minijinja = "2.12"
 
 # Internal workspace crates
-agent-core = { path = "crates/agent-core", version = "0.0.0" }
-agent-llm = { path = "crates/agent-llm", version = "0.0.0" }
-agent-tools = { path = "crates/agent-tools", version = "0.0.0" }
-agent-runtime = { path = "crates/agent-runtime", version = "0.0.0" }
-agent-workflow = { path = "crates/agent-workflow", version = "0.0.0" }
-agent-utils = { path = "crates/agent-utils", version = "0.0.0" }
-agent-mcp = { path = "crates/agent-mcp", version = "0.0.0" }
-agent-prompt = { path = "crates/agent-prompt", version = "0.0.0" }
-agent-stock = { path = "crates/agent-stock", version = "0.0.0" }
+agent-core = { path = "crates/agent-core", version = "0.0.1-alpha.1" }
+agent-llm = { path = "crates/agent-llm", version = "0.0.1-alpha.1" }
+agent-tools = { path = "crates/agent-tools", version = "0.0.1-alpha.1" }
+agent-runtime = { path = "crates/agent-runtime", version = "0.0.1-alpha.1" }
+agent-workflow = { path = "crates/agent-workflow", version = "0.0.1-alpha.1" }
+agent-utils = { path = "crates/agent-utils", version = "0.0.1-alpha.1" }
+agent-mcp = { path = "crates/agent-mcp", version = "0.0.1-alpha.1" }
+agent-prompt = { path = "crates/agent-prompt", version = "0.0.1-alpha.1" }
+agent-stock = { path = "crates/agent-stock", version = "0.0.1-alpha.1" }
 
 [workspace.package]
 # Shared package metadata for all crates
-version = "0.0.0"
+version = "0.0.1-alpha.1"
 edition = "2024"
 rust-version = "1.85"
+authors = []
+license = "MIT"
+repository = "https://github.com/Crescent-Moon-AI/agent-rs"
+homepage = "https://github.com/Crescent-Moon-AI/agent-rs"
 
 [profile.dev]
 # Fast compile times for development
@@ -100,3 +104,52 @@ codegen-units = 1
 [profile.test]
 # Faster test compilation
 opt-level = 1
+
+[workspace.lints.rust]
+# Warn on unsafe code
+unsafe_code = "warn"
+# Future compatibility
+rust_2024_compatibility = "warn"
+
+[workspace.lints.clippy]
+# Enable all default lints as warnings (priority -1 to allow overrides)
+all = { level = "warn", priority = -1 }
+# Enable pedantic lints
+pedantic = { level = "warn", priority = -1 }
+# Enable cargo lints
+cargo = { level = "warn", priority = -1 }
+
+# Pedantic lints to allow (too noisy or opinionated)
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+doc_markdown = "allow"
+too_many_lines = "allow"
+# Builder pattern commonly returns Self without #[must_use]
+return_self_not_must_use = "allow"
+# Casting precision loss is acceptable in many contexts
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+# Similar names are often intentional
+similar_names = "allow"
+# Unused self/async often required by trait signatures
+unused_self = "allow"
+unused_async = "allow"
+# Pass by value vs reference - allow flexibility
+needless_pass_by_value = "allow"
+trivially_copy_pass_by_ref = "allow"
+# Match arms analysis
+match_same_arms = "allow"
+# format! push is acceptable for readability
+format_push_string = "allow"
+# Cargo metadata not required for internal project
+cargo_common_metadata = "allow"
+multiple_crate_versions = "allow"
+
+# Strictness lints (cherry-picked from restriction)
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+unwrap_used = "warn"

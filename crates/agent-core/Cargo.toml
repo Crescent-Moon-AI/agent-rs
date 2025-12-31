@@ -3,12 +3,14 @@ name = "agent-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-description = "Core abstractions and runtime for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
-keywords = ["agent", "llm", "ai"]
-categories = ["api-bindings"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Core abstractions for building LLM-powered agents - Agent trait, Context, and Error types"
+keywords = ["agent", "llm", "ai", "async"]
+categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
 
 [dependencies]
 # From workspace
@@ -23,3 +25,6 @@ agent-utils = { workspace = true }
 [dev-dependencies]
 tokio-test = { workspace = true }
 mockall = { workspace = true }
+
+[lints]
+workspace = true

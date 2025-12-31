@@ -3,12 +3,14 @@ name = "agent-llm"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-description = "LLM provider abstraction layer for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
-keywords = ["agent", "llm", "ai"]
-categories = ["api-bindings"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "LLM provider abstraction layer for agent-rs - supports Anthropic, OpenAI, and Ollama"
+keywords = ["agent", "llm", "anthropic", "openai"]
+categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
 
 [features]
 default = []
@@ -33,3 +35,6 @@ reqwest = { workspace = true, optional = true }
 [dev-dependencies]
 tokio-test = { workspace = true }
 mockall = { workspace = true }
+
+[lints]
+workspace = true

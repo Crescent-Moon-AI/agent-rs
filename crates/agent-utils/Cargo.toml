@@ -3,12 +3,14 @@ name = "agent-utils"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-description = "Shared utilities for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
-keywords = ["agent", "utilities"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Shared utilities for agent-rs - logging, configuration, and common helpers"
+keywords = ["agent", "utilities", "logging", "config"]
 categories = ["development-tools"]
+readme = "README.md"
 
 [dependencies]
 # From workspace
@@ -21,3 +23,6 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
+
+[lints]
+workspace = true

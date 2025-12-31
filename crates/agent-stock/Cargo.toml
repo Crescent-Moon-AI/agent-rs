@@ -3,6 +3,7 @@ name = "agent-stock"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+publish = false
 
 [dependencies]
 # Internal crates
@@ -54,3 +55,6 @@ path = "src/bin/stock-bot.rs"
 
 [features]
 default = []
+
+[lints]
+workspace = true

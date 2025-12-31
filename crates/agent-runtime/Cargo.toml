@@ -1,7 +1,16 @@
 [package]
 name = "agent-runtime"
-edition.workspace = true
 version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Agent runtime for agent-rs - executor, dependency injection, and agent lifecycle management"
+keywords = ["agent", "runtime", "executor", "async"]
+categories = ["asynchronous", "development-tools"]
+readme = "README.md"
 
 [dependencies]
 agent-core.workspace = true
@@ -17,3 +26,6 @@ anyhow.workspace = true
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
+
+[lints]
+workspace = true

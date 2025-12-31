@@ -1,0 +1,8 @@
+# MSRV for lint compatibility
+msrv = "1.85"
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Allow certain short identifiers
+allowed-idents-below-min-chars = ["id", "to", "x", "y", "i", "j", "k", "n"]

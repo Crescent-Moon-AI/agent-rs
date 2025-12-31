@@ -3,8 +3,14 @@ name = "agent-prompt"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Prompt template management for agent-rs"
-license = "MIT"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Prompt template management for agent-rs - Jinja2 templates with multi-language support"
+keywords = ["agent", "prompt", "template", "jinja"]
+categories = ["text-processing", "template-engine"]
+readme = "README.md"
 
 [dependencies]
 # Template engine
@@ -31,3 +37,6 @@ file-loader = ["tokio"]
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }
 tempfile = "3"
+
+[lints]
+workspace = true

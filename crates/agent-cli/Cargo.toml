@@ -3,10 +3,11 @@ name = "agent-cli"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
+publish = false
+authors.workspace = true
+license.workspace = true
 description = "Command-line interface for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
+repository.workspace = true
 keywords = ["agent", "cli"]
 categories = ["command-line-utilities"]
 
@@ -28,3 +29,6 @@ agent-workflow = { workspace = true }
 agent-utils = { workspace = true }
 
 [dev-dependencies]
+
+[lints]
+workspace = true

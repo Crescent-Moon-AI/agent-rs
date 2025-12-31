@@ -1,11 +1,16 @@
 [package]
 name = "agent-mcp"
-version = "0.0.0"
-edition = "2024"
-rust-version = "1.85"
-license = "MIT OR Apache-2.0"
-description = "Model Context Protocol (MCP) integration for agent-rs"
-repository = "https://github.com/yourusername/agent-rs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Model Context Protocol (MCP) integration for agent-rs - connect to MCP servers"
+keywords = ["agent", "mcp", "protocol", "tools"]
+categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
 
 [dependencies]
 # Core dependencies
@@ -13,8 +18,8 @@ agent-core = { workspace = true }
 agent-tools = { workspace = true }
 
 # MCP SDK
-rust-mcp-sdk = { version = "0.2", features = ["server", "client"] }
-rust-mcp-schema = "0.2"
+rust-mcp-sdk = { workspace = true, features = ["server", "client"] }
+rust-mcp-schema = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }
@@ -46,3 +51,6 @@ tempfile = "3.14"
 default = ["stdio", "http"]
 stdio = []
 http = []
+
+[lints]
+workspace = true
