@@ -10,5 +10,7 @@ pub mod runtime;
 
 // Re-export key types
 pub use agents::{DelegatingAgent, DelegatingAgentBuilder, SimpleAgent, SimpleConfig, ToolAgent};
-pub use executor::{AgentExecutor, AgentExecutorBuilder, ExecutorConfig};
+pub use executor::{
+    AgentExecutor, AgentExecutorBuilder, ExecutorConfig, ExecutorEventHandler, NoOpEventHandler,
+};
 pub use runtime::{AgentRuntime, AgentRuntimeBuilder, RuntimeConfig};
