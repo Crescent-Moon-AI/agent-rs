@@ -34,7 +34,7 @@ impl Formatter for CliFormatter {
     }
     
     fn format_error(&self, error: &str) -> String {
-        format!("❌ Error: {}", error)
+        format!("❌ Error: {error}")
     }
     
     fn format_help(&self) -> String {
@@ -70,7 +70,7 @@ impl Formatter for TelegramFormatter {
     }
     
     fn format_error(&self, error: &str) -> String {
-        format!("❌ *Error:* {}", error)
+        format!("❌ *Error:* {error}")
     }
     
     fn format_help(&self) -> String {

@@ -66,7 +66,7 @@ impl Agent for DataFetcherAgent {
         self.agent.process(input, context).await
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "DataFetcherAgent"
     }
 }

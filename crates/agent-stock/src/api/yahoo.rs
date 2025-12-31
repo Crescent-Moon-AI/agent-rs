@@ -79,10 +79,10 @@ impl YahooFinanceClient {
 
         // Convert chrono DateTime to time OffsetDateTime
         let start_odt = OffsetDateTime::from_unix_timestamp(start.timestamp()).map_err(|e| {
-            StockError::YahooFinanceError(format!("Invalid start timestamp: {}", e))
+            StockError::YahooFinanceError(format!("Invalid start timestamp: {e}"))
         })?;
         let end_odt = OffsetDateTime::from_unix_timestamp(end.timestamp())
-            .map_err(|e| StockError::YahooFinanceError(format!("Invalid end timestamp: {}", e)))?;
+            .map_err(|e| StockError::YahooFinanceError(format!("Invalid end timestamp: {e}")))?;
 
         let response = provider
             .get_quote_history(symbol, start_odt, end_odt)
@@ -136,8 +136,7 @@ impl YahooFinanceClient {
             "max" => end - chrono::Duration::days(36500), // ~100 years
             _ => {
                 return Err(StockError::InvalidSymbol(format!(
-                    "Invalid range: {}",
-                    range
+                    "Invalid range: {range}"
                 )));
             }
         };

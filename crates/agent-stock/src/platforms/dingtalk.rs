@@ -32,7 +32,7 @@ impl DingTalkConfig {
 
 /// DingTalk bot
 pub struct DingTalkBot {
-    config: DingTalkConfig,
+    _config: DingTalkConfig,
     engine: StockAnalysisEngine,
     session_manager: SessionManager,
     formatter: Box<dyn Formatter>,
@@ -42,7 +42,7 @@ impl DingTalkBot {
     /// Create a new DingTalk bot
     pub fn new(config: DingTalkConfig, engine: StockAnalysisEngine) -> Self {
         Self {
-            config,
+            _config: config,
             engine,
             session_manager: SessionManager::new(BotPlatform::DingTalk),
             formatter: FormatterFactory::create(BotPlatform::DingTalk),
@@ -93,7 +93,7 @@ impl BotInterface for DingTalkBot {
         &mut self,
         user_id: &str,
         message: &str,
-        context: &mut AnalysisContext,
+        _context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let response = self.process_command(user_id, message).await?;
         Ok(BotResponse::formatted(response))
@@ -107,7 +107,7 @@ impl BotInterface for DingTalkBot {
         context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let full_command = if args.is_empty() {
-            format!("/{}", command)
+            format!("/{command}")
         } else {
             format!("/{} {}", command, args.join(" "))
         };

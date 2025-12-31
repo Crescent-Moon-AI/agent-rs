@@ -42,7 +42,7 @@ impl FeishuConfig {
 
 /// Feishu bot
 pub struct FeishuBot {
-    config: FeishuConfig,
+    _config: FeishuConfig,
     engine: StockAnalysisEngine,
     session_manager: SessionManager,
     formatter: Box<dyn Formatter>,
@@ -52,7 +52,7 @@ impl FeishuBot {
     /// Create a new Feishu bot
     pub fn new(config: FeishuConfig, engine: StockAnalysisEngine) -> Self {
         Self {
-            config,
+            _config: config,
             engine,
             session_manager: SessionManager::new(BotPlatform::Feishu),
             formatter: FormatterFactory::create(BotPlatform::Feishu),
@@ -103,7 +103,7 @@ impl BotInterface for FeishuBot {
         &mut self,
         user_id: &str,
         message: &str,
-        context: &mut AnalysisContext,
+        _context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let response = self.process_command(user_id, message).await?;
         Ok(BotResponse::formatted(response))
@@ -117,7 +117,7 @@ impl BotInterface for FeishuBot {
         context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let full_command = if args.is_empty() {
-            format!("/{}", command)
+            format!("/{command}")
         } else {
             format!("/{} {}", command, args.join(" "))
         };

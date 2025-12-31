@@ -227,7 +227,7 @@ impl SecEdgarClient {
             .header("User-Agent", &self.user_agent)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("SEC request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("SEC request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(StockError::ApiError(format!(
@@ -237,7 +237,7 @@ impl SecEdgarClient {
         }
 
         let data: serde_json::Value = response.json().await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {e}")))?;
 
         // Search for ticker in company list
         let ticker_upper = ticker.to_uppercase();
@@ -263,7 +263,7 @@ impl SecEdgarClient {
         // Pad CIK to 10 digits
         let cik_padded = format!("{:0>10}", cik.trim_start_matches('0'));
         
-        let url = format!("{}/submissions/CIK{}.json", SEC_BASE_URL, cik_padded);
+        let url = format!("{SEC_BASE_URL}/submissions/CIK{cik_padded}.json");
 
         let response = self
             .client
@@ -271,7 +271,7 @@ impl SecEdgarClient {
             .header("User-Agent", &self.user_agent)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("SEC request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("SEC request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(StockError::ApiError(format!(
@@ -281,7 +281,7 @@ impl SecEdgarClient {
         }
 
         let submissions: CompanySubmissions = response.json().await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {e}")))?;
 
         Ok(submissions)
     }
@@ -334,7 +334,7 @@ impl SecEdgarClient {
         self.rate_limiter.until_ready().await;
 
         let cik_padded = format!("{:0>10}", cik.trim_start_matches('0'));
-        let url = format!("{}/api/xbrl/companyfacts/CIK{}.json", SEC_BASE_URL, cik_padded);
+        let url = format!("{SEC_BASE_URL}/api/xbrl/companyfacts/CIK{cik_padded}.json");
 
         let response = self
             .client
@@ -342,7 +342,7 @@ impl SecEdgarClient {
             .header("User-Agent", &self.user_agent)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("SEC request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("SEC request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(StockError::ApiError(format!(
@@ -352,7 +352,7 @@ impl SecEdgarClient {
         }
 
         let facts: CompanyFacts = response.json().await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Failed to parse SEC response: {e}")))?;
 
         Ok(facts)
     }
@@ -383,12 +383,12 @@ impl SecEdgarClient {
                     if let Some(entries) = unit_data.and_then(|u| u.as_array()) {
                         for entry in entries {
                             if let (Some(val), Some(fy), Some(filed)) = (
-                                entry.get("val").and_then(|v| v.as_f64()),
-                                entry.get("fy").and_then(|y| y.as_i64()),
+                                entry.get("val").and_then(serde_json::Value::as_f64),
+                                entry.get("fy").and_then(serde_json::Value::as_i64),
                                 entry.get("filed").and_then(|f| f.as_str()),
                             ) {
                                 let fp = entry.get("fp").and_then(|f| f.as_str())
-                                    .map(|s| s.to_string());
+                                    .map(std::string::ToString::to_string);
                                 values.push((fy.to_string(), val, filed.to_string(), fp));
                             }
                         }
@@ -411,8 +411,8 @@ impl SecEdgarClient {
         // Group by fiscal year/quarter
         let mut seen_periods: std::collections::HashSet<String> = std::collections::HashSet::new();
         
-        for (fy, revenue, filed, fp) in revenues.iter() {
-            let period_key = format!("{}-{:?}", fy, fp);
+        for (fy, revenue, filed, fp) in &revenues {
+            let period_key = format!("{fy}-{fp:?}");
             if seen_periods.contains(&period_key) {
                 continue;
             }
@@ -466,10 +466,9 @@ impl SecEdgarClient {
     /// Build URL to access a filing document
     pub fn get_filing_url(&self, cik: &str, accession_number: &str, document: &str) -> String {
         let cik_padded = format!("{:0>10}", cik.trim_start_matches('0'));
-        let accession_clean = accession_number.replace("-", "");
+        let accession_clean = accession_number.replace('-', "");
         format!(
-            "https://www.sec.gov/Archives/edgar/data/{}/{}/{}",
-            cik_padded, accession_clean, document
+            "https://www.sec.gov/Archives/edgar/data/{cik_padded}/{accession_clean}/{document}"
         )
     }
 }

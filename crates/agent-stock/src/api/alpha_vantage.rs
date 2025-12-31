@@ -165,7 +165,7 @@ impl AlphaVantageClient {
         }
 
         // Parse time series data
-        let series_key = format!("Time Series ({})", interval);
+        let series_key = format!("Time Series ({interval})");
         let series = data.get(&series_key).ok_or_else(|| {
             StockError::AlphaVantageError("No time series data found".to_string())
         })?;
@@ -312,7 +312,7 @@ impl AlphaVantageClient {
         }
 
         // Check if data is empty (symbol not found)
-        if data.as_object().map(|o| o.is_empty()).unwrap_or(true) {
+        if data.as_object().is_none_or(serde_json::Map::is_empty) {
             return Err(StockError::InvalidSymbol(symbol.to_string()));
         }
 

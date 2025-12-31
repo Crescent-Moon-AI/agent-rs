@@ -393,7 +393,7 @@ impl StockConfigBuilder {
         // Create registry with the specified language
         let registry = PromptRegistry::with_language(response_language.clone());
         crate::prompts::register_prompts(&registry)
-            .map_err(|e| StockError::ConfigError(format!("Failed to register prompts: {}", e)))?;
+            .map_err(|e| StockError::ConfigError(format!("Failed to register prompts: {e}")))?;
 
         let defaults = StockConfig::default();
 

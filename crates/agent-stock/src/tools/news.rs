@@ -246,7 +246,7 @@ impl NewsTool {
         // Calculate average sentiment score
         let avg_score: f64 = articles
             .iter()
-            .filter_map(|n| n.get("sentiment_score").and_then(|s| s.as_f64()))
+            .filter_map(|n| n.get("sentiment_score").and_then(serde_json::Value::as_f64))
             .sum::<f64>()
             / articles.len().max(1) as f64;
 
@@ -270,7 +270,7 @@ impl NewsTool {
 impl Tool for NewsTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: NewsParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_news(params)
@@ -278,11 +278,11 @@ impl Tool for NewsTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "news"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Fetch recent news articles and sentiment analysis for a stock symbol. \
          Returns news headlines, summaries, sentiment scores, and overall market sentiment. \
          Supports multiple news providers: Mock (testing), Finnhub (60 req/min), and Alpha Vantage (with sentiment analysis)."

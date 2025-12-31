@@ -197,14 +197,14 @@ impl StockBot {
                 self.conversation.set_current_symbol(&symbol);
                 let result = self.agent.analyze_comprehensive(&symbol).await?;
                 self.conversation
-                    .add_turn(format!("/analyze {}", symbol), result.clone(), vec![symbol]);
+                    .add_turn(format!("/analyze {symbol}"), result.clone(), vec![symbol]);
                 Ok(result)
             }
             Command::Technical { symbol } => {
                 self.conversation.set_current_symbol(&symbol);
                 let result = self.agent.analyze_technical(&symbol).await?;
                 self.conversation.add_turn(
-                    format!("/technical {}", symbol),
+                    format!("/technical {symbol}"),
                     result.clone(),
                     vec![symbol],
                 );
@@ -214,7 +214,7 @@ impl StockBot {
                 self.conversation.set_current_symbol(&symbol);
                 let result = self.agent.analyze_fundamental(&symbol).await?;
                 self.conversation.add_turn(
-                    format!("/fundamental {}", symbol),
+                    format!("/fundamental {symbol}"),
                     result.clone(),
                     vec![symbol],
                 );
@@ -224,14 +224,14 @@ impl StockBot {
                 self.conversation.set_current_symbol(&symbol);
                 let result = self.agent.analyze_news(&symbol).await?;
                 self.conversation
-                    .add_turn(format!("/news {}", symbol), result.clone(), vec![symbol]);
+                    .add_turn(format!("/news {symbol}"), result.clone(), vec![symbol]);
                 Ok(result)
             }
             Command::Earnings { symbol } => {
                 self.conversation.set_current_symbol(&symbol);
                 let result = self.agent.analyze_earnings(&symbol).await?;
                 self.conversation.add_turn(
-                    format!("/earnings {}", symbol),
+                    format!("/earnings {symbol}"),
                     result.clone(),
                     vec![symbol],
                 );
@@ -259,19 +259,19 @@ impl StockBot {
                 Ok(result)
             }
             Command::Watch { symbol } => {
-                if !self.watchlist.contains(&symbol) {
-                    self.watchlist.push(symbol.clone());
-                    Ok(format!("Added {} to watchlist", symbol))
+                if self.watchlist.contains(&symbol) {
+                    Ok(format!("{symbol} is already in watchlist"))
                 } else {
-                    Ok(format!("{} is already in watchlist", symbol))
+                    self.watchlist.push(symbol.clone());
+                    Ok(format!("Added {symbol} to watchlist"))
                 }
             }
             Command::Unwatch { symbol } => {
                 if let Some(pos) = self.watchlist.iter().position(|s| s == &symbol) {
                     self.watchlist.remove(pos);
-                    Ok(format!("Removed {} from watchlist", symbol))
+                    Ok(format!("Removed {symbol} from watchlist"))
                 } else {
-                    Ok(format!("{} is not in watchlist", symbol))
+                    Ok(format!("{symbol} is not in watchlist"))
                 }
             }
             Command::Watchlist => {

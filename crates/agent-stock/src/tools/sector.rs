@@ -83,7 +83,7 @@ impl Sector {
     }
 
     /// Parse sector from string
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "technology" | "tech" | "xlk" => Some(Sector::Technology),
             "healthcare" | "health" | "xlv" => Some(Sector::Healthcare),
@@ -226,10 +226,9 @@ impl SectorAnalysisTool {
 
     /// Get performance for a specific sector
     async fn get_sector_performance(&self, sector_name: &str) -> Result<Value> {
-        let sector = Sector::from_str(sector_name).ok_or_else(|| {
+        let sector = Sector::parse(sector_name).ok_or_else(|| {
             crate::error::StockError::InvalidSymbol(format!(
-                "Unknown sector: {}. Valid sectors: Technology, Healthcare, Financials, etc.",
-                sector_name
+                "Unknown sector: {sector_name}. Valid sectors: Technology, Healthcare, Financials, etc."
             ))
         })?;
 
@@ -267,8 +266,8 @@ impl SectorAnalysisTool {
 
         // Sort by 1-day performance
         performances.sort_by(|a, b| {
-            let a_pct = a.get("change_1d_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let b_pct = b.get("change_1d_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let a_pct = a.get("change_1d_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+            let b_pct = b.get("change_1d_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
             b_pct.partial_cmp(&a_pct).unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -281,9 +280,8 @@ impl SectorAnalysisTool {
             .iter()
             .filter(|p| {
                 p.get("change_1d_pct")
-                    .and_then(|v| v.as_f64())
-                    .map(|v| v > 0.0)
-                    .unwrap_or(false)
+                    .and_then(serde_json::Value::as_f64)
+                    .is_some_and(|v| v > 0.0)
             })
             .count();
 
@@ -332,12 +330,10 @@ impl SectorAnalysisTool {
             } else {
                 "Late Expansion - Rotation beginning"
             }
+        } else if defensive_strength > 1.0 {
+            "Defensive rotation - Risk-off environment"
         } else {
-            if defensive_strength > 1.0 {
-                "Defensive rotation - Risk-off environment"
-            } else {
-                "Mixed signals - Transition period"
-            }
+            "Mixed signals - Transition period"
         };
 
         // Rate sensitive sectors
@@ -395,7 +391,7 @@ impl SectorAnalysisTool {
         let (change_1d, change_1d_pct) = if historical.len() >= 2 {
             let prev_close = historical[1].close;
             let change = current_price - prev_close;
-            let pct = if prev_close != 0.0 { (change / prev_close) * 100.0 } else { 0.0 };
+            let pct = if prev_close == 0.0 { 0.0 } else { (change / prev_close) * 100.0 };
             (Some(change), Some(pct))
         } else {
             (None, None)
@@ -445,10 +441,10 @@ impl SectorAnalysisTool {
         let current = quotes.first()?.close;
         let past = quotes.get(days.min(quotes.len() - 1))?.close;
 
-        if past != 0.0 {
-            Some(((current - past) / past) * 100.0)
-        } else {
+        if past == 0.0 {
             None
+        } else {
+            Some(((current - past) / past) * 100.0)
         }
     }
 
@@ -471,9 +467,9 @@ impl SectorAnalysisTool {
 
     /// Analyze current sector conditions
     fn analyze_sector_conditions(&self, performance: &Value) -> Value {
-        let change_1d = performance.get("change_1d_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let change_1m = performance.get("change_1m_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let volume_ratio = performance.get("volume_ratio").and_then(|v| v.as_f64()).unwrap_or(1.0);
+        let change_1d = performance.get("change_1d_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+        let change_1m = performance.get("change_1m_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+        let volume_ratio = performance.get("volume_ratio").and_then(serde_json::Value::as_f64).unwrap_or(1.0);
 
         let momentum = if change_1m > 5.0 {
             "Strong uptrend"
@@ -529,8 +525,7 @@ impl SectorAnalysisTool {
                 .filter(|s| {
                     s.get("sensitivity")
                         .and_then(|v| v.as_str())
-                        .map(|v| v == group)
-                        .unwrap_or(false)
+                        .is_some_and(|v| v == group)
                 })
                 .collect();
 
@@ -540,7 +535,7 @@ impl SectorAnalysisTool {
 
             let avg_perf: f64 = group_sectors
                 .iter()
-                .filter_map(|s| s.get("change_1m_pct").and_then(|v| v.as_f64()))
+                .filter_map(|s| s.get("change_1m_pct").and_then(serde_json::Value::as_f64))
                 .sum::<f64>()
                 / group_sectors.len() as f64;
 
@@ -560,8 +555,7 @@ impl SectorAnalysisTool {
                 .filter(|s| {
                     s.get("rate_sensitivity")
                         .and_then(|v| v.as_str())
-                        .map(|v| v == "High")
-                        .unwrap_or(false)
+                        .is_some_and(|v| v == "High")
                 })
                 .collect();
 
@@ -571,7 +565,7 @@ impl SectorAnalysisTool {
 
             rate_sensitive
                 .iter()
-                .filter_map(|s| s.get("change_1m_pct").and_then(|v| v.as_f64()))
+                .filter_map(|s| s.get("change_1m_pct").and_then(serde_json::Value::as_f64))
                 .sum::<f64>()
                 / rate_sensitive.len() as f64
         } else {
@@ -614,9 +608,9 @@ impl SectorAnalysisTool {
                 .iter()
                 .filter_map(|s| {
                     let name = s.get("sector")?.as_str()?;
-                    let perf_1d = s.get("change_1d_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                    let perf_1m = s.get("change_1m_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                    let perf_3m = s.get("change_3m_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                    let perf_1d = s.get("change_1d_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+                    let perf_1m = s.get("change_1m_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+                    let perf_3m = s.get("change_3m_pct").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
                     
                     // Composite score (weighted)
                     let score = perf_1d * 0.2 + perf_1m * 0.4 + perf_3m * 0.4;
@@ -632,8 +626,8 @@ impl SectorAnalysisTool {
                 .collect();
 
             rankings.sort_by(|a, b| {
-                let a_score = a.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let b_score = b.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let a_score = a.get("score").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
+                let b_score = b.get("score").and_then(serde_json::Value::as_f64).unwrap_or(0.0);
                 b_score.partial_cmp(&a_score).unwrap_or(std::cmp::Ordering::Equal)
             });
 
@@ -648,7 +642,7 @@ impl SectorAnalysisTool {
 impl Tool for SectorAnalysisTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: SectorParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_sector_data(params)
@@ -656,11 +650,11 @@ impl Tool for SectorAnalysisTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "sector_analysis"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Analyze market sectors using SPDR Select Sector ETFs. \
          Provides sector performance data, rotation analysis, and relative strength rankings. \
          Includes sector characteristics (cyclical/defensive) and rate sensitivity analysis."
@@ -704,10 +698,10 @@ mod tests {
 
     #[test]
     fn test_sector_from_str() {
-        assert_eq!(Sector::from_str("technology"), Some(Sector::Technology));
-        assert_eq!(Sector::from_str("tech"), Some(Sector::Technology));
-        assert_eq!(Sector::from_str("XLK"), Some(Sector::Technology));
-        assert_eq!(Sector::from_str("unknown"), None);
+        assert_eq!(Sector::parse("technology"), Some(Sector::Technology));
+        assert_eq!(Sector::parse("tech"), Some(Sector::Technology));
+        assert_eq!(Sector::parse("XLK"), Some(Sector::Technology));
+        assert_eq!(Sector::parse("unknown"), None);
     }
 
     #[test]

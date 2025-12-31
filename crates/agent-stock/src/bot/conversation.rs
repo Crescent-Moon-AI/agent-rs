@@ -200,7 +200,7 @@ impl ConversationManager {
                 .any(|word| word.chars().all(|c| c.is_ascii_uppercase()) && word.len() <= 5);
 
             if !has_symbol && self.is_follow_up(query) {
-                resolved = format!("{}: {}", symbol, resolved);
+                resolved = format!("{symbol}: {resolved}");
             }
 
             resolved

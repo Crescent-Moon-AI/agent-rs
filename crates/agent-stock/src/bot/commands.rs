@@ -135,7 +135,7 @@ impl Command {
             "clear" | "cls" | "清空" => Ok(Command::Clear),
             "help" | "h" | "?" | "帮助" => Ok(Command::Help),
             "exit" | "quit" | "q" | "退出" => Ok(Command::Exit),
-            _ => Err(StockError::CommandError(format!("Unknown command: {}", cmd))),
+            _ => Err(StockError::CommandError(format!("Unknown command: {cmd}"))),
         }
     }
 

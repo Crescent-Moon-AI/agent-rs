@@ -89,7 +89,7 @@ impl GeopoliticalTopic {
     }
 
     /// Parse topic from string
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "us-china" | "us china" | "china" => Some(GeopoliticalTopic::UsChinaRelations),
             "trade" | "tariff" | "trade policy" => Some(GeopoliticalTopic::TradePolicies),
@@ -176,7 +176,7 @@ fn default_limit() -> usize {
 /// Tool for geopolitical analysis
 pub struct GeopoliticalTool {
     finnhub_client: Option<FinnhubClient>,
-    alpha_vantage_client: Option<AlphaVantageClient>,
+    _alpha_vantage_client: Option<AlphaVantageClient>,
     cache: StockCache,
     _config: Arc<StockConfig>,
 }
@@ -194,7 +194,7 @@ impl GeopoliticalTool {
 
         Self {
             finnhub_client,
-            alpha_vantage_client,
+            _alpha_vantage_client: alpha_vantage_client,
             cache,
             _config: config,
         }
@@ -224,7 +224,7 @@ impl GeopoliticalTool {
     async fn analyze_geopolitics(&self, params: &GeopoliticalParams) -> Result<Value> {
         match params.analysis_type.to_lowercase().as_str() {
             "news" => {
-                let topic = params.topic.as_ref().map(|t| GeopoliticalTopic::from_str(t)).flatten();
+                let topic = params.topic.as_ref().and_then(|t| GeopoliticalTopic::parse(t));
                 self.fetch_geopolitical_news(topic, params.limit).await
             }
             "risk" => self.assess_geopolitical_risks().await,
@@ -243,7 +243,7 @@ impl GeopoliticalTool {
         // Filter and categorize news by topic
         let categorized = self.categorize_news(&news, topic);
 
-        let topic_name = topic.map(|t| t.name()).unwrap_or("All Topics");
+        let topic_name = topic.map_or("All Topics", |t| t.name());
 
         Ok(json!({
             "type": "geopolitical_news",
@@ -288,7 +288,7 @@ impl GeopoliticalTool {
             .filter_map(|article| {
                 let title = article.get("title")?.as_str()?;
                 let summary = article.get("summary").and_then(|s| s.as_str()).unwrap_or("");
-                let content = format!("{} {}", title, summary).to_lowercase();
+                let content = format!("{title} {summary}").to_lowercase();
 
                 // Identify topic
                 let topic = self.identify_topic(&content);
@@ -433,7 +433,7 @@ impl GeopoliticalTool {
                 .iter()
                 .take(3)
                 .filter_map(|a| a.get("title").and_then(|t| t.as_str()))
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
                 .collect();
 
             let market_implications = self.get_market_implications(&topic, risk_level);
@@ -518,7 +518,7 @@ impl GeopoliticalTool {
             ],
         };
 
-        let mut implications: Vec<String> = base_implications.iter().map(|s| s.to_string()).collect();
+        let mut implications: Vec<String> = base_implications.iter().map(std::string::ToString::to_string).collect();
 
         if risk_level == "High" {
             implications.push("Consider reducing position size".to_string());
@@ -626,7 +626,7 @@ impl GeopoliticalTool {
 impl Tool for GeopoliticalTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: GeopoliticalParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_geopolitical_data(params)
@@ -634,11 +634,11 @@ impl Tool for GeopoliticalTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "geopolitical"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Analyze geopolitical events and their market impact. \
          Tracks US-China relations, trade policies, sanctions, Middle East situation, \
          central bank policies, supply chain issues, and more. \
@@ -685,9 +685,9 @@ mod tests {
 
     #[test]
     fn test_topic_from_str() {
-        assert_eq!(GeopoliticalTopic::from_str("china"), Some(GeopoliticalTopic::UsChinaRelations));
-        assert_eq!(GeopoliticalTopic::from_str("fed"), Some(GeopoliticalTopic::CentralBanks));
-        assert_eq!(GeopoliticalTopic::from_str("oil"), Some(GeopoliticalTopic::MiddleEast));
+        assert_eq!(GeopoliticalTopic::parse("china"), Some(GeopoliticalTopic::UsChinaRelations));
+        assert_eq!(GeopoliticalTopic::parse("fed"), Some(GeopoliticalTopic::CentralBanks));
+        assert_eq!(GeopoliticalTopic::parse("oil"), Some(GeopoliticalTopic::MiddleEast));
     }
 
     #[test]

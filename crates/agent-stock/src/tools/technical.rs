@@ -229,7 +229,7 @@ fn interpret_rsi(rsi: f64) -> &'static str {
 impl Tool for TechnicalIndicatorTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: TechnicalParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.calculate_indicator(params)
@@ -237,11 +237,11 @@ impl Tool for TechnicalIndicatorTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "technical_indicator"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Calculate technical indicators for stock analysis. \
          Supports RSI, SMA, EMA, MACD, Bollinger Bands, ATR, and Stochastic oscillator."
     }

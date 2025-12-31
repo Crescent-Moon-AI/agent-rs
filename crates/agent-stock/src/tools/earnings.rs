@@ -344,7 +344,7 @@ fn format_currency(amount: f64) -> String {
     } else if abs_amount >= 1_000.0 {
         format!("{}${:.2}K", sign, abs_amount / 1_000.0)
     } else {
-        format!("{}${:.2}", sign, abs_amount)
+        format!("{sign}${abs_amount:.2}")
     }
 }
 
@@ -352,7 +352,7 @@ fn format_currency(amount: f64) -> String {
 impl Tool for EarningsReportTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: EarningsParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_earnings(params)
@@ -360,11 +360,11 @@ impl Tool for EarningsReportTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "earnings_report"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Fetch and analyze company earnings reports from SEC EDGAR. \
          Returns quarterly (10-Q) and annual (10-K) financial data including revenue, \
          net income, EPS, margins, and financial ratios. Also provides trend analysis \

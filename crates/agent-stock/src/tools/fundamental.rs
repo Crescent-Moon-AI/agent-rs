@@ -100,8 +100,8 @@ impl FundamentalDataTool {
 
                             // Calculate P/B ratio if we have both
                             if let (Some(market_cap), Some(book_value)) = (
-                                result.get("market_cap").and_then(|v| v.as_f64()),
-                                result.get("book_value").and_then(|v| v.as_f64()),
+                                result.get("market_cap").and_then(serde_json::Value::as_f64),
+                                result.get("book_value").and_then(serde_json::Value::as_f64),
                             ) {
                                 if book_value != 0.0 {
                                     result["pb_ratio"] = json!(market_cap / book_value);
@@ -135,7 +135,7 @@ fn format_market_cap(cap: f64) -> String {
     } else if cap >= 1_000_000.0 {
         format!("${:.2}M", cap / 1_000_000.0)
     } else {
-        format!("${:.2}", cap)
+        format!("${cap:.2}")
     }
 }
 
@@ -158,7 +158,7 @@ fn interpret_pe(pe: f64) -> &'static str {
 impl Tool for FundamentalDataTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: FundamentalParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_fundamental_data(params)
@@ -166,11 +166,11 @@ impl Tool for FundamentalDataTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "fundamental_data"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Fetch fundamental data and financial metrics for a stock. \
          Includes company information, market cap, P/E ratio, dividend yield, EPS, and book value. \
          Requires Alpha Vantage API key."

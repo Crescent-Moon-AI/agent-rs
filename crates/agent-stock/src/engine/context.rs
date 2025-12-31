@@ -90,7 +90,7 @@ impl AnalysisContext {
     }
     
     pub fn current_symbol(&self) -> Option<&str> {
-        self.current_symbols.last().map(|s| s.as_str())
+        self.current_symbols.last().map(std::string::String::as_str)
     }
     
     pub fn add_turn(&mut self, input: String, response: String, symbols: Vec<String>) {

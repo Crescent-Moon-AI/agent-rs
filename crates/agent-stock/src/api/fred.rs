@@ -204,14 +204,14 @@ impl FredClient {
         params.insert("api_key", &self.api_key);
         params.insert("file_type", "json");
 
-        let url = format!("{}/series", FRED_BASE_URL);
+        let url = format!("{FRED_BASE_URL}/series");
         let response = self
             .client
             .get(&url)
             .query(&params)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("FRED request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("FRED request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(StockError::ApiError(format!(
@@ -223,7 +223,7 @@ impl FredClient {
         let data: SeriesResponse = response
             .json()
             .await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse FRED response: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Failed to parse FRED response: {e}")))?;
 
         data.seriess
             .into_iter()
@@ -258,14 +258,14 @@ impl FredClient {
             params.insert("limit", lim.to_string());
         }
 
-        let url = format!("{}/series/observations", FRED_BASE_URL);
+        let url = format!("{FRED_BASE_URL}/series/observations");
         let response = self
             .client
             .get(&url)
             .query(&params)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("FRED request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("FRED request failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(StockError::ApiError(format!(
@@ -277,7 +277,7 @@ impl FredClient {
         let data: ObservationsResponse = response
             .json()
             .await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse FRED response: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Failed to parse FRED response: {e}")))?;
 
         Ok(data.observations)
     }
@@ -352,10 +352,10 @@ impl FredClient {
             .unwrap_or(current);
 
         let yoy_change = current - year_ago;
-        let yoy_percent = if year_ago != 0.0 {
-            (yoy_change / year_ago) * 100.0
-        } else {
+        let yoy_percent = if year_ago == 0.0 {
             0.0
+        } else {
+            (yoy_change / year_ago) * 100.0
         };
 
         Ok((current, yoy_change, yoy_percent))
@@ -398,7 +398,7 @@ impl FredClient {
         // Get GDP growth
         let gdp_growth = self.get_latest(series::GDP_GROWTH).await.ok().map(|o| o.value);
 
-        let yield_curve_inverted = yield_spread.map(|s| s < 0.0).unwrap_or(false);
+        let yield_curve_inverted = yield_spread.is_some_and(|s| s < 0.0);
 
         // Generate assessment
         let assessment = self.generate_assessment(
@@ -523,11 +523,11 @@ impl FredClient {
         let spread = rates
             .get("10Y-2Y Spread")
             .and_then(|v| v.get("value"))
-            .and_then(|v| v.as_f64());
+            .and_then(serde_json::Value::as_f64);
 
-        let curve_status = if spread.map(|s| s < 0.0).unwrap_or(false) {
+        let curve_status = if spread.is_some_and(|s| s < 0.0) {
             "Inverted (Recession Warning)"
-        } else if spread.map(|s| s < 0.5).unwrap_or(false) {
+        } else if spread.is_some_and(|s| s < 0.5) {
             "Flat (Caution)"
         } else {
             "Normal (Healthy)"

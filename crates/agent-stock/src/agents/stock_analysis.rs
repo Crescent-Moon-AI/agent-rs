@@ -21,8 +21,8 @@ use crate::router::{QueryIntent, SmartRouter};
 pub struct StockAnalysisAgent {
     agent: agent_runtime::agents::DelegatingAgent,
     router: SmartRouter,
-    // Store individual agents for parallel execution
-    data_fetcher: Arc<DataFetcherAgent>,
+    // Store individual agents for parallel execution (reserved for future use)
+    _data_fetcher: Arc<DataFetcherAgent>,
     technical_analyzer: Arc<TechnicalAnalyzerAgent>,
     fundamental_analyzer: Arc<FundamentalAnalyzerAgent>,
     news_analyzer: Arc<NewsAnalyzerAgent>,
@@ -73,7 +73,7 @@ impl StockAnalysisAgent {
         Ok(Self {
             agent,
             router: smart_router,
-            data_fetcher,
+            _data_fetcher: data_fetcher,
             technical_analyzer,
             fundamental_analyzer,
             news_analyzer,
@@ -107,25 +107,25 @@ impl StockAnalysisAgent {
 
     async fn run_technical(&self, symbol: &str) -> Result<String> {
         let mut ctx = Context::new();
-        let input = format!("Perform technical analysis on {} using RSI, MACD, and moving averages.", symbol);
+        let input = format!("Perform technical analysis on {symbol} using RSI, MACD, and moving averages.");
         self.technical_analyzer.process(input, &mut ctx).await
     }
 
     async fn run_fundamental(&self, symbol: &str) -> Result<String> {
         let mut ctx = Context::new();
-        let input = format!("Analyze the fundamental metrics and valuation of {}.", symbol);
+        let input = format!("Analyze the fundamental metrics and valuation of {symbol}.");
         self.fundamental_analyzer.process(input, &mut ctx).await
     }
 
     async fn run_news(&self, symbol: &str) -> Result<String> {
         let mut ctx = Context::new();
-        let input = format!("Analyze recent news and market sentiment for {}.", symbol);
+        let input = format!("Analyze recent news and market sentiment for {symbol}.");
         self.news_analyzer.process(input, &mut ctx).await
     }
 
     async fn run_earnings(&self, symbol: &str) -> Result<String> {
         let mut ctx = Context::new();
-        let input = format!("Analyze the earnings reports and financial statements for {}.", symbol);
+        let input = format!("Analyze the earnings reports and financial statements for {symbol}.");
         self.earnings_analyzer.process(input, &mut ctx).await
     }
 
@@ -144,9 +144,8 @@ impl StockAnalysisAgent {
     pub async fn analyze(&self, symbol: &str) -> Result<String> {
         let mut context = Context::new();
         let input = format!(
-            "Provide a comprehensive analysis of {} including current price, \
-             technical indicators, fundamental metrics, recent earnings, and news.",
-            symbol
+            "Provide a comprehensive analysis of {symbol} including current price, \
+             technical indicators, fundamental metrics, recent earnings, and news."
         );
         self.process(input, &mut context).await
     }
@@ -251,7 +250,7 @@ impl StockAnalysisAgent {
                 }
                 Err(e) => {
                     report.push_str(&format!("## {} (Error)\n\n", symbols[i]));
-                    report.push_str(&format!("Failed to analyze: {}\n\n", e));
+                    report.push_str(&format!("Failed to analyze: {e}\n\n"));
                 }
             }
         }
@@ -324,12 +323,12 @@ impl ParallelAnalysisResult {
         if let Some(ref technical) = self.technical {
             // Extract first paragraph or first 200 chars
             let excerpt = technical.lines().next().unwrap_or("").chars().take(200).collect::<String>();
-            summary.push_str(&format!("**Technical**: {}\n", excerpt));
+            summary.push_str(&format!("**Technical**: {excerpt}\n"));
         }
 
         if let Some(ref fundamental) = self.fundamental {
             let excerpt = fundamental.lines().next().unwrap_or("").chars().take(200).collect::<String>();
-            summary.push_str(&format!("**Fundamental**: {}\n", excerpt));
+            summary.push_str(&format!("**Fundamental**: {excerpt}\n"));
         }
 
         summary
@@ -365,7 +364,7 @@ impl Agent for StockAnalysisAgent {
         self.agent.process(input, context).await
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "StockAnalysisAgent"
     }
 }

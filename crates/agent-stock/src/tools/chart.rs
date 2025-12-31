@@ -136,7 +136,7 @@ impl ChartDataTool {
 impl Tool for ChartDataTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: ChartParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.prepare_chart_data(params)
@@ -144,11 +144,11 @@ impl Tool for ChartDataTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "chart_data"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Prepare chart data for visualization. \
          Returns candlestick data, line chart data, and optional technical indicator overlays. \
          Ready for use with charting libraries."

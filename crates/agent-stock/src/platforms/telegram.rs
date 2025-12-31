@@ -89,13 +89,13 @@ impl TelegramBot {
             }
             Command::Watch { symbol } => {
                 session.watch(symbol.clone());
-                format!("✅ Added {} to watchlist", symbol)
+                format!("✅ Added {symbol} to watchlist")
             }
             Command::Unwatch { symbol } => {
                 if session.unwatch(&symbol) {
-                    format!("✅ Removed {} from watchlist", symbol)
+                    format!("✅ Removed {symbol} from watchlist")
                 } else {
-                    format!("❌ {} not in watchlist", symbol)
+                    format!("❌ {symbol} not in watchlist")
                 }
             }
             Command::Watchlist => {
@@ -135,7 +135,7 @@ impl BotInterface for TelegramBot {
         &mut self,
         user_id: &str,
         message: &str,
-        context: &mut AnalysisContext,
+        _context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let response = self.process_command(user_id, message).await?;
         Ok(BotResponse::formatted(response))
@@ -149,7 +149,7 @@ impl BotInterface for TelegramBot {
         context: &mut AnalysisContext,
     ) -> Result<BotResponse> {
         let full_command = if args.is_empty() {
-            format!("/{}", command)
+            format!("/{command}")
         } else {
             format!("/{} {}", command, args.join(" "))
         };

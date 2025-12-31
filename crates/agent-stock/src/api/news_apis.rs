@@ -83,21 +83,20 @@ impl FinnhubClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("Finnhub request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Finnhub request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(StockError::ApiError(format!(
-                "Finnhub API error {}: {}",
-                status, body
+                "Finnhub API error {status}: {body}"
             )));
         }
 
         response
             .json::<Vec<FinnhubNewsArticle>>()
             .await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse Finnhub response: {}", e)))
+            .map_err(|e| StockError::ApiError(format!("Failed to parse Finnhub response: {e}")))
     }
 
     /// Get general market news
@@ -117,21 +116,20 @@ impl FinnhubClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| StockError::ApiError(format!("Finnhub request failed: {}", e)))?;
+            .map_err(|e| StockError::ApiError(format!("Finnhub request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(StockError::ApiError(format!(
-                "Finnhub API error {}: {}",
-                status, body
+                "Finnhub API error {status}: {body}"
             )));
         }
 
         response
             .json::<Vec<FinnhubNewsArticle>>()
             .await
-            .map_err(|e| StockError::ApiError(format!("Failed to parse Finnhub response: {}", e)))
+            .map_err(|e| StockError::ApiError(format!("Failed to parse Finnhub response: {e}")))
     }
 }
 

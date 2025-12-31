@@ -141,7 +141,7 @@ impl Agent for MacroAnalyzerAgent {
         self.agent.process(input, context).await
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "MacroAnalyzerAgent"
     }
 }

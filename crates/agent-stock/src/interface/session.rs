@@ -123,7 +123,7 @@ impl SessionStorage for InMemoryStorage {
     fn set(&mut self, user_id: &str, session: UserSession) -> Result<()> {
         self.sessions
             .write()
-            .map_err(|e| StockError::Other(format!("Lock error: {}", e)))?
+            .map_err(|e| StockError::Other(format!("Lock error: {e}")))?
             .insert(user_id.to_string(), session);
         Ok(())
     }

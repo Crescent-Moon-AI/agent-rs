@@ -95,7 +95,7 @@ impl Agent for EarningsAnalyzerAgent {
         self.agent.process(input, context).await
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "EarningsAnalyzerAgent"
     }
 }

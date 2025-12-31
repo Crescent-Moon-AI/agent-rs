@@ -76,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Configuration:");
     println!("  API Base: {}", openai_config.api_base);
-    println!("  Model: {}", model);
+    println!("  Model: {model}");
     println!();
 
     // Create OpenAI provider
@@ -117,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
             }
             Ok(_) => {}
             Err(e) => {
-                eprintln!("Error reading input: {}", e);
+                eprintln!("Error reading input: {e}");
                 continue;
             }
         }
@@ -130,7 +130,7 @@ async fn main() -> anyhow::Result<()> {
         // Process input
         match bot.process_input(input).await {
             Ok(response) => {
-                println!("{}\n", response);
+                println!("{response}\n");
             }
             Err(e) => {
                 // Check if it's an exit request
@@ -138,7 +138,7 @@ async fn main() -> anyhow::Result<()> {
                     println!("Goodbye!");
                     break;
                 }
-                eprintln!("Error: {}\n", e);
+                eprintln!("Error: {e}\n");
             }
         }
     }

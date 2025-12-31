@@ -69,7 +69,7 @@ impl Message {
         }
         
         let command = parts[0].to_string();
-        let args = parts[1..].iter().map(|s| s.to_string()).collect();
+        let args = parts[1..].iter().map(std::string::ToString::to_string).collect();
         
         Some((command, args))
     }

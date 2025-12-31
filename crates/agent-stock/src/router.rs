@@ -382,7 +382,7 @@ impl SmartRouter {
             let clean_word = word.trim_matches(|c: char| !c.is_alphanumeric());
 
             // Check if it looks like a US stock symbol (1-5 uppercase letters)
-            if clean_word.len() >= 1
+            if !clean_word.is_empty()
                 && clean_word.len() <= 5
                 && clean_word.chars().all(|c| c.is_ascii_uppercase())
             {
@@ -419,7 +419,7 @@ impl SmartRouter {
 
         RoutingResult {
             intent,
-            agents: agents.iter().map(|s| s.to_string()).collect(),
+            agents: agents.iter().map(std::string::ToString::to_string).collect(),
             symbols,
             parallel: intent.requires_multiple_agents(),
         }

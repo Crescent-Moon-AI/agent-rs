@@ -109,7 +109,7 @@ impl StockDataTool {
 impl Tool for StockDataTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: StockDataParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_stock_data(params)
@@ -117,11 +117,11 @@ impl Tool for StockDataTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "stock_data"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Fetch current and historical stock price data for a given symbol. \
          Returns current quote and optionally historical prices over a specified range."
     }

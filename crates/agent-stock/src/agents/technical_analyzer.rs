@@ -68,7 +68,7 @@ impl Agent for TechnicalAnalyzerAgent {
         self.agent.process(input, context).await
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "TechnicalAnalyzerAgent"
     }
 }

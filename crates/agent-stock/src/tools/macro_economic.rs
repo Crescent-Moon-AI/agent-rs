@@ -199,13 +199,13 @@ impl MacroEconomicTool {
             .get("rates")
             .and_then(|r| r.get("Federal Funds Rate"))
             .and_then(|v| v.get("value"))
-            .and_then(|v| v.as_f64());
+            .and_then(serde_json::Value::as_f64);
 
         let treasury_10y = rate_data
             .get("rates")
             .and_then(|r| r.get("10-Year Treasury"))
             .and_then(|v| v.get("value"))
-            .and_then(|v| v.as_f64());
+            .and_then(serde_json::Value::as_f64);
 
         // Determine policy stance
         let policy_stance = if fed_funds.unwrap_or(0.0) >= 5.0 {
@@ -251,7 +251,7 @@ impl MacroEconomicTool {
         let core_pce_yoy = inflation_data
             .get("Core PCE")
             .and_then(|v| v.get("yoy_change_pct"))
-            .and_then(|v| v.as_f64());
+            .and_then(serde_json::Value::as_f64);
 
         let vs_target = match core_pce_yoy {
             Some(pce) if pce <= 2.0 => "At or below Fed's 2% target",
@@ -548,7 +548,7 @@ impl MacroEconomicTool {
 impl Tool for MacroEconomicTool {
     async fn execute(&self, params: Value) -> AgentResult<Value> {
         let params: MacroParams = serde_json::from_value(params).map_err(|e| {
-            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {}", e))
+            agent_core::Error::ProcessingFailed(format!("Invalid parameters: {e}"))
         })?;
 
         self.fetch_macro_data(params)
@@ -556,11 +556,11 @@ impl Tool for MacroEconomicTool {
             .map_err(|e| agent_core::Error::ProcessingFailed(e.to_string()))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "macro_economic"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Fetch macroeconomic indicators and Fed policy data from FRED (Federal Reserve Economic Data). \
          Returns data on interest rates, inflation (CPI, PCE), employment, GDP growth, and market indicators. \
          Provides economic assessment and market implications. Requires FRED API key."
