@@ -6,7 +6,7 @@
 //! 3. If tool use requested, execute tools and loop back
 //! 4. If completed, return final response
 
-use agent_core::Result;
+use agent_core::{Context, Result};
 use agent_llm::{
     CompletionRequest, ContentBlock, LLMProvider, Message, StopReason, ToolDefinition,
 };
@@ -162,6 +162,45 @@ impl AgentExecutor {
         handler: Arc<dyn ExecutorEventHandler>,
     ) -> Result<String> {
         let mut conversation = history;
+        conversation.push(Message::user(user_message));
+        self.run_conversation_with_handler(conversation, Some(handler))
+            .await
+    }
+
+    /// Execute the agent loop with full context
+    ///
+    /// This is the most flexible method that accepts:
+    /// - User message
+    /// - Conversation history
+    /// - Event handler for streaming
+    /// - Context for runtime configuration (language, session, etc.)
+    ///
+    /// The context's language setting will be used to prepend language
+    /// instructions to the conversation when needed.
+    pub async fn run_with_context(
+        &self,
+        user_message: String,
+        history: Vec<Message>,
+        handler: Arc<dyn ExecutorEventHandler>,
+        context: &Context,
+    ) -> Result<String> {
+        let mut conversation = history;
+
+        // Prepend language instruction if language is set and not Chinese (default)
+        if let Some(lang) = context.language() {
+            if lang.starts_with("en") {
+                // Insert language instruction at the beginning
+                conversation.insert(
+                    0,
+                    Message::user("[System: Please respond in English. All responses must be in English.]".to_string()),
+                );
+                conversation.insert(
+                    1,
+                    Message::assistant("Understood. I will respond in English.".to_string()),
+                );
+            }
+        }
+
         conversation.push(Message::user(user_message));
         self.run_conversation_with_handler(conversation, Some(handler))
             .await

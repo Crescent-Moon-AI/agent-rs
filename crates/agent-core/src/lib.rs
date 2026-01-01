@@ -7,5 +7,5 @@ pub mod context;
 pub mod error;
 
 pub use agent::Agent;
-pub use context::Context;
+pub use context::{keys as context_keys, Context};
 pub use error::{Error, Result};
